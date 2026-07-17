@@ -2,27 +2,20 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 
-let _client: MongoClient | null = null;
+const globalForMongo = globalThis as unknown as {
+	mongoClient: MongoClient | undefined;
+};
 
-function getClient() {
-	if (!_client) {
-		const uri = process.env.MONGODB_URI;
-		if (!uri) {
-			throw new Error("MONGODB_URI environment variable is not defined");
-		}
-		_client = new MongoClient(uri);
-	}
-	return _client;
+const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/skillnest";
+export const client = globalForMongo.mongoClient ?? new MongoClient(uri);
+
+if (process.env.NODE_ENV !== "production") {
+	globalForMongo.mongoClient = client;
 }
 
 export const auth = betterAuth({
-	database: mongodbAdapter(
-		new Proxy({} as ReturnType<typeof MongoClient.prototype.db>, {
-			get(_target, prop, receiver) {
-				return Reflect.get(getClient().db(), prop, receiver);
-			},
-		}),
-	),
+	baseURL: process.env.BETTER_AUTH_URL,
+	database: mongodbAdapter(client.db()),
 	emailAndPassword: {
 		enabled: true,
 	},
