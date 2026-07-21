@@ -1,4 +1,7 @@
-export default function AdminBookingsPage() {
+import { requireRole } from "@/lib/permissions";
+
+export default async function AdminBookingsPage() {
+	await requireRole("admin");
 	return (
 		<div className="flex flex-col gap-4">
 			<h1 className="text-3xl tracking-tight text-foreground">

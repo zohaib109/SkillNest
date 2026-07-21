@@ -1,21 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { getSession } from "@/lib/auth-server";
 
-const subjects = [
-	"Mathematics",
-	"Physics",
-	"English",
-	"Computer Science",
-	"Chemistry",
-	"Biology",
-	"Music",
-	"Art",
-];
+export default async function Home() {
+	const session = await getSession();
+	const user = session?.user ?? null;
 
-export default function Home() {
 	return (
-		<main className="flex-1">
+		<main className="flex-1 bg-background">
 			{/* ── Hero Section ── */}
 			<section className="relative overflow-hidden bg-background">
 				<div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-32">
@@ -23,53 +16,74 @@ export default function Home() {
 						{/* Left: Copy */}
 						<div className="flex flex-col gap-8">
 							<div className="flex flex-col gap-5">
-								<h1 className="text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-									Find Your Perfect Tutor
+								<span className="inline-flex max-w-fit items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">
+									✨ A Premium Learning Space
+								</span>
+								<h1 className="text-4xl leading-[1.1] tracking-tight font-extrabold font-[var(--font-heading)] text-foreground sm:text-5xl lg:text-6xl">
+									Master academic and professional skills.
 								</h1>
 								<p className="max-w-lg text-lg leading-relaxed text-muted-foreground sm:text-xl">
-									Connect with expert tutors, personalized to your goals. Learn
-									faster, achieve more.
+									Connect with hand-selected, verified tutors for personalized
+									one-on-one virtual lessons. Reach your learning goals on your
+									own schedule.
 								</p>
 							</div>
 
-							{/* Search Bar */}
-							<div className="flex items-center gap-0 rounded-full border border-border bg-white p-1.5 shadow-sm">
-								<div className="flex flex-1 items-center gap-2 pl-4">
-									<svg
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="2"
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										className="shrink-0 text-muted-foreground"
-										aria-hidden="true"
-									>
-										<circle cx="11" cy="11" r="8" />
-										<path d="m21 21-4.3-4.3" />
-									</svg>
-									<input
-										type="text"
-										placeholder="Search subjects, skills, or tutor name..."
-										className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-									/>
-								</div>
-								<Link
-									href="/tutors"
-									className={buttonVariants({
-										variant: "default",
-										size: "default",
-										className: "rounded-full px-6",
-									})}
-								>
-									Find a Tutor
-								</Link>
+							{/* Dynamic Call to Action Buttons */}
+							<div className="flex flex-col gap-3 sm:flex-row">
+								{user ? (
+									<>
+										<Link
+											href="/dashboard"
+											className={buttonVariants({
+												variant: "default",
+												size: "lg",
+												className: "rounded-full px-8",
+											})}
+										>
+											Go to Dashboard
+										</Link>
+										<Link
+											href="/tutors"
+											className={buttonVariants({
+												variant: "outline",
+												size: "lg",
+												className:
+													"rounded-full px-8 border-primary text-primary hover:bg-primary/5",
+											})}
+										>
+											Browse Tutors
+										</Link>
+									</>
+								) : (
+									<>
+										<Link
+											href="/sign-up"
+											className={buttonVariants({
+												variant: "default",
+												size: "lg",
+												className: "rounded-full px-8",
+											})}
+										>
+											Find Your Tutor
+										</Link>
+										<Link
+											href="/become-a-tutor"
+											className={buttonVariants({
+												variant: "outline",
+												size: "lg",
+												className:
+													"rounded-full px-8 border-primary text-primary hover:bg-primary/5",
+											})}
+										>
+											Become a Tutor
+										</Link>
+									</>
+								)}
 							</div>
 
 							{/* Trust Indicators */}
-							<div className="flex items-center gap-4">
+							<div className="flex items-center gap-4 pt-2">
 								{/* Stars */}
 								<div className="flex items-center gap-0.5">
 									{["s1", "s2", "s3", "s4", "s5"].map((id, i) => (
@@ -86,7 +100,7 @@ export default function Home() {
 										</svg>
 									))}
 								</div>
-								<span className="text-sm text-muted-foreground">
+								<span className="text-sm text-muted-foreground font-medium">
 									Trusted by 10,000+ students
 								</span>
 								{/* Avatars */}
@@ -94,7 +108,7 @@ export default function Home() {
 									{["S", "A", "M"].map((initial, i) => (
 										<div
 											key={initial}
-											className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary/10 text-xs font-medium text-primary"
+											className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary/10 text-xs font-semibold text-primary"
 											style={{ zIndex: 3 - i }}
 										>
 											{initial}
@@ -106,7 +120,7 @@ export default function Home() {
 
 						{/* Right: Hero Image */}
 						<div className="relative hidden lg:block">
-							<div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-muted shadow-xl">
+							<div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-muted shadow-lg">
 								<Image
 									src="/hero-student.jpg"
 									alt="Student studying in a cozy environment"
@@ -123,56 +137,124 @@ export default function Home() {
 				</div>
 			</section>
 
-			{/* ── Popular Subjects ── */}
-			<section className="border-t border-border bg-white">
-				<div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-					<h2 className="mb-10 text-center text-3xl tracking-tight text-foreground sm:text-4xl">
-						Popular Subjects
-					</h2>
-					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-						{subjects.map((subject) => (
-							<Link
-								key={subject}
-								href={`/tutors?subject=${encodeURIComponent(subject)}`}
-								className="group flex items-center justify-center rounded-2xl border border-border bg-background px-6 py-5 text-center transition-all hover:border-primary/30 hover:shadow-sm"
+			{/* ── Why SkillNest? ── */}
+			<section className="border-t border-border bg-white py-20 sm:py-28">
+				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+					<div className="mx-auto max-w-3xl text-center mb-16">
+						<h2 className="text-3xl font-bold tracking-tight font-[var(--font-heading)] text-foreground sm:text-4xl">
+							A Calmer, More Personalized Learning Experience
+						</h2>
+						<p className="mt-4 text-lg text-muted-foreground">
+							We reject standard fast-paced lesson mills. SkillNest is built for
+							focused growth, connection, and long-term skill retention.
+						</p>
+					</div>
+
+					<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+						{[
+							{
+								icon: "🎯",
+								title: "One-on-One Focus",
+								description:
+									"Every lesson is custom-built for your individual learning path. Learn at your own pace without classroom distractions.",
+							},
+							{
+								icon: "🛡️",
+								title: "Verified Quality",
+								description:
+									"All tutors undergo credential vetting and manual admin validation before hosting private lessons.",
+							},
+							{
+								icon: "⏳",
+								title: "No Subscriptions",
+								description:
+									"Book single lessons whenever you need them. No forced packages, billing commitments, or lock-in contracts.",
+							},
+							{
+								icon: "💻",
+								title: "Integrated Classroom",
+								description:
+									"Attend interactive lessons with native high-definition video, audio, and screen sharing powered by Agora.",
+							},
+						].map((benefit) => (
+							<div
+								key={benefit.title}
+								className="flex flex-col gap-3 rounded-2xl border border-border p-6 bg-background/50 hover:shadow-xs transition-shadow duration-200"
 							>
-								<span className="text-sm font-medium text-foreground transition-colors group-hover:text-primary">
-									{subject}
-								</span>
-							</Link>
+								<span className="text-3xl">{benefit.icon}</span>
+								<h3 className="text-lg font-semibold text-foreground">
+									{benefit.title}
+								</h3>
+								<p className="text-sm leading-relaxed text-muted-foreground">
+									{benefit.description}
+								</p>
+							</div>
 						))}
 					</div>
 				</div>
 			</section>
 
+			{/* ── Subjects Banner ── */}
+			<section className="border-t border-border bg-background py-16 sm:py-20">
+				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+					<div className="rounded-3xl border border-border bg-white p-8 sm:p-12 shadow-xs flex flex-col md:flex-row items-center justify-between gap-8">
+						<div className="flex flex-col gap-3 max-w-xl text-left">
+							<span className="text-xs font-semibold uppercase tracking-wider text-primary">
+								Curriculum catalog
+							</span>
+							<h2 className="text-2xl font-bold tracking-tight font-[var(--font-heading)] text-foreground sm:text-3xl">
+								What can you learn on SkillNest?
+							</h2>
+							<p className="text-muted-foreground leading-relaxed">
+								From foundational language acquisition and secondary school
+								subjects to advanced computer science and college prep, explore
+								our catalog of categories.
+							</p>
+						</div>
+						<div>
+							<Link
+								href="/subjects"
+								className={buttonVariants({
+									variant: "default",
+									size: "lg",
+									className: "rounded-full px-8 shrink-0 whitespace-nowrap",
+								})}
+							>
+								Explore Our Subjects
+							</Link>
+						</div>
+					</div>
+				</div>
+			</section>
+
 			{/* ── How it Works ── */}
-			<section className="border-t border-border bg-background">
-				<div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-					<h2 className="mb-4 text-center text-3xl tracking-tight text-foreground sm:text-4xl">
+			<section className="border-t border-border bg-white py-20 sm:py-24">
+				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+					<h2 className="mb-4 text-center text-3xl font-bold tracking-tight font-[var(--font-heading)] text-foreground sm:text-4xl">
 						How SkillNest Works
 					</h2>
 					<p className="mx-auto mb-14 max-w-2xl text-center text-lg text-muted-foreground">
-						Three simple steps to start learning with the best tutors.
+						Three simple steps to unlock your full learning potential.
 					</p>
 					<div className="grid grid-cols-1 gap-10 md:grid-cols-3">
 						{[
 							{
 								step: "01",
-								title: "Search & Discover",
+								title: "Create Account & Find Subjects",
 								description:
-									"Browse our curated directory of expert tutors. Filter by subject, price, language, and availability.",
+									"Explore our subject catalog to see what we teach, then sign up to access the private tutor directory.",
 							},
 							{
 								step: "02",
-								title: "Book a Lesson",
+								title: "Schedule Your Lesson",
 								description:
-									"Pick a time slot that works for you and book a single lesson. No commitments or packages required.",
+									"Pick a verified tutor, select a calendar slot, and book a single lesson. Safe checkout is processed instantly.",
 							},
 							{
 								step: "03",
-								title: "Learn & Grow",
+								title: "Attend in the Browser",
 								description:
-									"Join your live lesson directly in the browser. Rate your tutor and book again anytime.",
+									"Join your customized one-on-one virtual classroom. Click, learn, and log off. Simple as that.",
 							},
 						].map((item) => (
 							<div
@@ -182,7 +264,9 @@ export default function Home() {
 								<span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 font-[var(--font-heading)] text-lg font-extrabold text-primary">
 									{item.step}
 								</span>
-								<h3 className="mb-2 text-xl text-foreground">{item.title}</h3>
+								<h3 className="mb-2 text-xl font-semibold text-foreground">
+									{item.title}
+								</h3>
 								<p className="text-base leading-relaxed text-muted-foreground">
 									{item.description}
 								</p>
@@ -193,38 +277,53 @@ export default function Home() {
 			</section>
 
 			{/* ── CTA Section ── */}
-			<section className="border-t border-border bg-primary">
-				<div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+			<section className="border-t border-border bg-primary py-16 sm:py-20">
+				<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 					<div className="flex flex-col items-center gap-6 text-center">
-						<h2 className="text-3xl tracking-tight text-primary-foreground sm:text-4xl">
-							Ready to start learning?
+						<h2 className="text-3xl font-bold tracking-tight font-[var(--font-heading)] text-primary-foreground sm:text-4xl">
+							Ready to start master learning?
 						</h2>
-						<p className="max-w-xl text-lg text-primary-foreground/80">
-							Join thousands of students who found their perfect tutor on
-							SkillNest.
+						<p className="max-w-xl text-lg text-primary-foreground/80 leading-relaxed">
+							Join our calm, focused learning community today. Gain the
+							knowledge you need with expert individual guides.
 						</p>
 						<div className="flex flex-col gap-3 sm:flex-row">
-							<Link
-								href="/sign-up"
-								className={buttonVariants({
-									variant: "secondary",
-									size: "lg",
-									className: "rounded-full",
-								})}
-							>
-								Get Started Free
-							</Link>
-							<Link
-								href="/tutors"
-								className={buttonVariants({
-									variant: "outline",
-									size: "lg",
-									className:
-										"rounded-full border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground",
-								})}
-							>
-								Browse Tutors
-							</Link>
+							{user ? (
+								<Link
+									href="/dashboard"
+									className={buttonVariants({
+										variant: "secondary",
+										size: "lg",
+										className: "rounded-full px-8",
+									})}
+								>
+									Open Dashboard
+								</Link>
+							) : (
+								<>
+									<Link
+										href="/sign-up"
+										className={buttonVariants({
+											variant: "secondary",
+											size: "lg",
+											className: "rounded-full px-8",
+										})}
+									>
+										Get Started Free
+									</Link>
+									<Link
+										href="/become-a-tutor"
+										className={buttonVariants({
+											variant: "outline",
+											size: "lg",
+											className:
+												"rounded-full border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground px-8",
+										})}
+									>
+										Become a Tutor
+									</Link>
+								</>
+							)}
 						</div>
 					</div>
 				</div>
@@ -254,7 +353,7 @@ export default function Home() {
 								SkillNest
 							</span>
 						</div>
-						<p className="text-sm text-muted-foreground">
+						<p className="text-sm text-muted-foreground font-medium">
 							&copy; {new Date().getFullYear()} SkillNest. All rights reserved.
 						</p>
 					</div>

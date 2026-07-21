@@ -72,6 +72,15 @@ The app follows a standard Next.js App Router structure. Key organizational deci
 - Refunds are **admin-reviewed**, not automated
 - Lesson durations are **tutor-selected fixed options**, not freeform input
 
+## Development Guidelines
+
+- **Inspect Existing State**: Before writing or modifying code, inspect existing project files, `package.json`, and any current authentication/configuration files.
+- **Documentation First**: Use only the official documentation matching the exact installed versions of libraries and frameworks. Do not rely on memory or older library behaviors. If memory conflicts with official docs, follow the official docs.
+- **Next.js Conventions**: If a file convention changed in the current Next.js version, use the current official convention. For Next.js 16, use `proxy.ts` instead of `middleware.ts` unless the official documentation clearly requires Next.js Middleware for a specific Edge-runtime case.
+- **Better Auth Validation**: Confirm Better Auth API usage, config, and functions from official documentation before writing or editing auth-related code.
+- **No Assumptions**: If anything is unclear, stop and report the uncertainty immediately instead of inventing or assuming an implementation.
+
 ## Current State
 
 Phase 1 (Foundation) is **partially complete** — the `create-next-app` scaffold exists at repo root with Next.js 16, React 19, Tailwind v4, and TypeScript 5. Still missing: shadcn/ui, Biome, MongoDB/Better Auth connection, env management, design tokens matching the warm cream/brown palette, and the editorial homepage layout. Pages are still the default boilerplate. Project root is `Tutoring-marketplace/` (no subfolders).
+

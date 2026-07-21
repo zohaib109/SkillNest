@@ -32,12 +32,29 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
+			suppressHydrationWarning
 			className={cn(
 				"h-full antialiased",
 				bricolage.variable,
 				plusJakarta.variable,
 			)}
 		>
+			<head>
+				<script
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: inline script is required to prevent layout flash on dark mode load
+					dangerouslySetInnerHTML={{
+						__html: `
+							try {
+								if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+									document.documentElement.classList.add('dark');
+								} else {
+									document.documentElement.classList.remove('dark');
+								}
+							} catch (_) {}
+						`,
+					}}
+				/>
+			</head>
 			<body className="min-h-full flex flex-col font-[var(--font-body)]">
 				<Navbar />
 				{children}

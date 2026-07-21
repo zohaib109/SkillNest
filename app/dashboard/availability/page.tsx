@@ -1,17 +1,24 @@
-export default function TutorAvailabilityPage() {
+import { AvailabilityEditor } from "@/components/tutors/availability-editor";
+import { requireRole } from "@/lib/permissions";
+import { getTutorProfileByUserId } from "@/lib/tutors";
+
+export default async function AvailabilityPage() {
+	const session = await requireRole("tutor");
+	const profile = await getTutorProfileByUserId(session.user.id);
+
 	return (
-		<div className="flex flex-col gap-4">
-			<h1 className="text-3xl tracking-tight text-foreground">Availability</h1>
-			<p className="text-muted-foreground">
-				Set your available teaching hours and time slots. Availability editor is
-				coming in Phase 5.
-			</p>
-			<div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center">
-				<p className="text-sm text-muted-foreground">
-					You&apos;ll be able to set weekly availability rules and block
-					specific dates.
+		<div className="flex flex-col gap-6">
+			<div>
+				<h1 className="text-3xl tracking-tight text-foreground">
+					Availability
+				</h1>
+				<p className="mt-1 text-muted-foreground">
+					Set your weekly teaching hours. Times are interpreted in your profile
+					timezone
+					{profile?.timezone ? ` (${profile.timezone})` : ""}.
 				</p>
 			</div>
+			<AvailabilityEditor initial={profile} />
 		</div>
 	);
 }
