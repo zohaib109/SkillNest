@@ -15,9 +15,17 @@ if (process.env.NODE_ENV !== "production") {
 
 import { headers } from "next/headers";
 
+import { sendVerificationEmail } from "@/lib/email";
+
 export const auth = betterAuth({
 	baseURL: process.env.BETTER_AUTH_URL,
 	database: mongodbAdapter(client.db()),
+	account: {
+		accountLinking: {
+			enabled: true,
+			trustedProviders: ["google"],
+		},
+	},
 	emailAndPassword: {
 		enabled: true,
 	},
@@ -51,7 +59,7 @@ export const auth = betterAuth({
 		sendOnSignUp: true,
 		autoSignInAfterVerification: true,
 		sendVerificationEmail: async ({ user, url }) => {
-			console.log(`Verify email for ${user.email} with link: ${url}`);
+			await sendVerificationEmail({ user, url });
 		},
 	},
 	databaseHooks: {

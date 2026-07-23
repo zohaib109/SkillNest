@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signIn, signUp } from "@/lib/auth-client";
-import { SUBJECTS } from "@/lib/constants";
+import { signInSchema, signUpSchema } from "@/lib/validators/auth";
 
 type Tab = "login" | "signup";
 type Role = "student" | "tutor";
@@ -20,13 +20,10 @@ export function SignInForm() {
 	const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 	const [role, setRole] = useState<Role>(initialRole);
 
-	// Form fields
+	// Basic Account Fields
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [headline, setHeadline] = useState("");
-	const [hourlyRate, setHourlyRate] = useState("");
-	const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0] as string);
 
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -43,22 +40,11 @@ export function SignInForm() {
 		}
 	}, [searchParams]);
 
-	// Strong password validation regex
-	const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-	// Helper to write cookies for OAuth or Hook consumption
+	// Helper to set role cookie for server hooks / OAuth registration
 	function setRegistrationCookies() {
-		// Set cookies with a max-age of 1 hour (3600 seconds)
+		// Set cookie with max-age of 1 hour (3600 seconds)
 		// biome-ignore lint/suspicious/noDocumentCookie: cookie configuration is needed for OAuth signup metadata passing
 		document.cookie = `selected_role=${role}; path=/; max-age=3600; SameSite=Lax`;
-		if (role === "tutor") {
-			// biome-ignore lint/suspicious/noDocumentCookie: cookie configuration is needed for OAuth signup metadata passing
-			document.cookie = `tutor_headline=${encodeURIComponent(headline)}; path=/; max-age=3600; SameSite=Lax`;
-			// biome-ignore lint/suspicious/noDocumentCookie: cookie configuration is needed for OAuth signup metadata passing
-			document.cookie = `tutor_rate=${hourlyRate}; path=/; max-age=3600; SameSite=Lax`;
-			// biome-ignore lint/suspicious/noDocumentCookie: cookie configuration is needed for OAuth signup metadata passing
-			document.cookie = `tutor_subjects=${encodeURIComponent(selectedSubject)}; path=/; max-age=3600; SameSite=Lax`;
-		}
 	}
 
 	async function handleEmailAuth(e: React.FormEvent) {
@@ -68,9 +54,20 @@ export function SignInForm() {
 
 		try {
 			if (activeTab === "login") {
-				// Login
+				// Validate Login Inputs
+				const validation = signInSchema.safeParse({ email, password });
+				if (!validation.success) {
+					setError(validation.error.issues[0]?.message ?? "Invalid input");
+					setLoading(false);
+					return;
+				}
+
 				await signIn.email(
-					{ email, password, callbackURL: callbackUrl },
+					{
+						email: validation.data.email,
+						password: validation.data.password,
+						callbackURL: callbackUrl,
+					},
 					{
 						onSuccess: () => {
 							router.push(callbackUrl);
@@ -82,44 +79,36 @@ export function SignInForm() {
 					},
 				);
 			} else {
-				// Sign Up
-				// Enforce strong password
-				if (!passwordRegex.test(password)) {
-					setError(
-						"Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number.",
-					);
+				// Validate Signup Inputs (Student and Tutor)
+				const validation = signUpSchema.safeParse({
+					name,
+					email,
+					password,
+					role,
+				});
+
+				if (!validation.success) {
+					setError(validation.error.issues[0]?.message ?? "Invalid input");
 					setLoading(false);
 					return;
 				}
 
-				// Enforce tutor-specific fields
-				if (role === "tutor") {
-					if (headline.trim().length < 10) {
-						setError("Headline must be at least 10 characters.");
-						setLoading(false);
-						return;
-					}
-					if (!hourlyRate || Number(hourlyRate) < 1) {
-						setError("Hourly rate must be at least $1.");
-						setLoading(false);
-						return;
-					}
-				}
-
-				// Set cookies so that database hooks can pick up details
 				setRegistrationCookies();
+
+				const targetUrl =
+					validation.data.role === "tutor" ? "/complete-profile" : "/dashboard";
 
 				await signUp.email(
 					{
-						email,
-						password,
-						name,
-						role,
-						callbackURL: "/dashboard",
+						name: validation.data.name,
+						email: validation.data.email,
+						password: validation.data.password,
+						role: validation.data.role,
+						callbackURL: targetUrl,
 					} as any,
 					{
 						onSuccess: () => {
-							router.push("/dashboard");
+							router.push(targetUrl);
 							router.refresh();
 						},
 						onError: (ctx) => {
@@ -139,25 +128,15 @@ export function SignInForm() {
 		setError("");
 		setLoading(true);
 		try {
-			// Enforce tutor-specific fields if signing up
-			if (activeTab === "signup" && role === "tutor") {
-				if (headline.trim().length < 10) {
-					setError("Headline must be at least 10 characters.");
-					setLoading(false);
-					return;
-				}
-				if (!hourlyRate || Number(hourlyRate) < 1) {
-					setError("Hourly rate must be at least $1.");
-					setLoading(false);
-					return;
-				}
-			}
-
-			// Write role and metadata cookies for social signup to read from headers
 			setRegistrationCookies();
 
+			const targetUrl =
+				activeTab === "signup" && role === "tutor"
+					? "/complete-profile"
+					: "/dashboard";
+
 			await signIn.social(
-				{ provider: "google", callbackURL: "/dashboard" },
+				{ provider: "google", callbackURL: targetUrl },
 				{
 					onError: (ctx) => {
 						setError(ctx.error.message ?? "Google sign in failed");
@@ -309,7 +288,7 @@ export function SignInForm() {
 						type="password"
 						placeholder={
 							activeTab === "signup"
-								? "At least 8 chars, 1 uppercase, 1 number"
+								? "Min 10 chars, 1 upper, 1 lower, 1 number, 1 special char"
 								: "••••••••"
 						}
 						value={password}
@@ -320,71 +299,6 @@ export function SignInForm() {
 						}
 					/>
 				</div>
-
-				{/* Tutor Extra Onboarding Fields */}
-				{activeTab === "signup" && role === "tutor" && (
-					<div className="flex flex-col gap-4 border-t border-border/80 pt-4 mt-1">
-						<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-							Tutor Profile Information
-						</span>
-						<div className="flex flex-col gap-1.5">
-							<label
-								htmlFor="headline"
-								className="text-xs font-semibold text-foreground"
-							>
-								Professional Headline
-							</label>
-							<Input
-								id="headline"
-								type="text"
-								placeholder="e.g. Expert Physics & Calculus Instructor"
-								value={headline}
-								onChange={(e) => setHeadline(e.target.value)}
-								required
-							/>
-						</div>
-
-						<div className="grid grid-cols-2 gap-3">
-							<div className="flex flex-col gap-1.5">
-								<label
-									htmlFor="rate"
-									className="text-xs font-semibold text-foreground"
-								>
-									Hourly Rate (USD)
-								</label>
-								<Input
-									id="rate"
-									type="number"
-									min="1"
-									placeholder="20"
-									value={hourlyRate}
-									onChange={(e) => setHourlyRate(e.target.value)}
-									required
-								/>
-							</div>
-							<div className="flex flex-col gap-1.5">
-								<label
-									htmlFor="subject"
-									className="text-xs font-semibold text-foreground"
-								>
-									Primary Subject
-								</label>
-								<select
-									id="subject"
-									value={selectedSubject}
-									onChange={(e) => setSelectedSubject(e.target.value)}
-									className="h-9 w-full rounded-4xl border border-input bg-input/30 px-3 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-								>
-									{SUBJECTS.map((sub) => (
-										<option key={sub} value={sub}>
-											{sub}
-										</option>
-									))}
-								</select>
-							</div>
-						</div>
-					</div>
-				)}
 
 				<Button
 					type="submit"

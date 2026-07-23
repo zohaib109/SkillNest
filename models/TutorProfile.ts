@@ -36,7 +36,7 @@ const tutorProfileSchema = new Schema(
 		availabilityRules: { type: [availabilityRuleSchema], default: [] },
 		status: {
 			type: String,
-			enum: ["draft", "pending", "approved", "rejected"],
+			enum: ["draft", "pending_review", "approved", "rejected"],
 			default: "draft",
 			index: true,
 		},

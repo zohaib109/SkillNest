@@ -6,7 +6,7 @@
 
 export type Role = "student" | "tutor" | "admin";
 
-export type TutorStatus = "draft" | "pending" | "approved" | "rejected";
+export type TutorStatus = "draft" | "pending_review" | "approved" | "rejected";
 
 export interface AvailabilityRule {
 	/** 0 = Sunday ... 6 = Saturday */

@@ -49,6 +49,12 @@ export function EmailVerificationPrompt({
 						<strong className="text-foreground">{email}</strong>. Please check
 						your inbox and verify your email to unlock access to SkillNest.
 					</p>
+					{process.env.NODE_ENV === "development" && (
+						<p className="text-2xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900 rounded-lg p-2.5 mt-1">
+							⚙️ Dev Note: No production email service is connected yet. Copy the
+							verification link printed in your server terminal.
+						</p>
+					)}
 				</div>
 
 				{message && (

@@ -109,7 +109,7 @@ export async function submitTutorProfileForReview(): Promise<ActionResult> {
 		return { success: false, error: "Your profile is already approved" };
 	}
 
-	profile.status = "pending";
+	profile.status = "pending_review";
 	profile.rejectionReason = "";
 	await profile.save();
 	revalidatePath("/dashboard/profile");

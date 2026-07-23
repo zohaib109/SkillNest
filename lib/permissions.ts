@@ -31,3 +31,35 @@ export async function requireRole(role: Role) {
 export function hasRole(role: string | undefined | null, expected: Role) {
 	return role === expected;
 }
+
+/** Check if a tutor profile is approved and live. */
+export function isTutorApproved(
+	profile: { status?: string; isApproved?: boolean } | null | undefined,
+): boolean {
+	return profile?.status === "approved" && Boolean(profile?.isApproved);
+}
+
+/** Check if a tutor profile is pending admin review. */
+export function isTutorPendingReview(
+	profile: { status?: string } | null | undefined,
+): boolean {
+	return profile?.status === "pending_review";
+}
+
+/** Check if a tutor profile was rejected with requested changes. */
+export function isTutorRejected(
+	profile: { status?: string } | null | undefined,
+): boolean {
+	return profile?.status === "rejected";
+}
+
+/** Require the current user to be an approved tutor, else bounce to /dashboard. */
+export async function requireApprovedTutor() {
+	const session = await requireRole("tutor");
+	const { getTutorProfileByUserId } = await import("@/lib/tutors");
+	const profile = await getTutorProfileByUserId(session.user.id);
+	if (!isTutorApproved(profile)) {
+		redirect("/dashboard");
+	}
+	return { session, profile };
+}
