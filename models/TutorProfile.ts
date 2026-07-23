@@ -22,6 +22,7 @@ const tutorProfileSchema = new Schema(
 		userId: { type: String, required: true, unique: true, index: true },
 		userName: { type: String, default: "" },
 		userEmail: { type: String, default: "" },
+		photoUrl: { type: String, default: "" },
 		slug: { type: String, required: true, unique: true, index: true },
 		headline: { type: String, default: "" },
 		bio: { type: String, default: "" },

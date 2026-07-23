@@ -36,14 +36,14 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
   - Database hooks in `lib/auth.ts` handle user role assignments (`before`) and auto-creation of `TutorProfile` shell documents (`after`).
   - Configured `autoSignInAfterVerification: true` for email verification redirect flow.
   - **Development Email Verification**: Implemented modular `lib/email.ts` mailer service. In local development, `sendVerificationEmail` prints a formatted ASCII box with the exact verification link to the server terminal. Added dev-mode notice in `EmailVerificationPrompt` component.
-- **Route Protection**: Next.js 16 `proxy.ts` root middleware checks the `better-auth.session_token` cookie to guard `/dashboard`, `/complete-profile`, and `/tutors`. Unauthenticated users are redirected to `/sign-in`.
+- **Route Protection**: Next.js 16 `proxy.ts` root middleware checks the `better-auth.session_token` cookie to guard `/admin`, `/dashboard`, `/complete-profile`, and `/tutors`. Unauthenticated users are redirected to `/sign-in`.
 
 ### Tutor Onboarding Flow
 - **Dedicated Onboarding (`app/complete-profile/page.tsx` & `components/tutors/tutor-onboarding-form.tsx`)**:
   - After tutor account creation, users are routed to `/complete-profile` (role-protected, `role === "tutor"`).
-  - Collects core MVP profile fields: Professional Headline (10–120 chars), Short Bio (50–2000 chars), Hourly Rate ($1–$10,000 USD), Primary & Additional Subjects (reusing official `SUBJECTS` list from `lib/constants.ts`), and Weekly Teaching Availability.
+  - Collects a compressed profile photo plus core MVP fields: Professional Headline (10–120 chars), Short Bio (50–2000 chars), Hourly Rate ($1–$10,000 USD), Primary & Additional Subjects (reusing official `SUBJECTS` list from `lib/constants.ts`), optional intro video, and Weekly Teaching Availability.
   - Form components use theme-aware controls (`bg-card`, `text-foreground`, `[&>option]:bg-card [&>option]:text-foreground`) for legibility in both Light and Dark modes.
-  - Saves profile data via `saveTutorProfile` and `saveAvailability` server actions, then redirects to `/dashboard`.
+  - Saves profile data via `saveTutorProfile` and `saveAvailability`, then submits it via `submitTutorProfileForReview` before redirecting to the private tutor dashboard.
 
 ### Design System & Theme Engine
 - **Visual Direction**: Warm editorial minimal aesthetic with custom OKLCH color tokens in `app/globals.css`.
@@ -63,15 +63,21 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 ### Dashboard Base
 - **Role-Aware Dashboards (`app/dashboard/`)**: Layout shell supporting `student`, `tutor`, and `admin` views, desktop sidebar (`sidebar.tsx`), mobile drawer header (`mobile-header.tsx`), and email verification banner (`verification-prompt.tsx`).
 
+### Tutor Marketplace Workflow
+- **Private review queue (`/admin`)**: Unlinked operations page protected by the `zohaibammar33@gmail.com` allowlist. It presents only `pending_review` tutor applications with their photo, profile details, availability, and intro-video link. Approval and rejection are enforced again in server actions.
+- **Tutor workspace**: Tutors have status-aware overview, profile/photo editor, availability, intro video, earnings/activity, and lesson-request pages.
+- **Discovery and profiles**: Signed-in users can browse only approved profiles at `/tutors` and view `/tutors/[slug]`. Profiles include an expandable bio, availability summary, teaching rate, subjects, and an embedded YouTube/Vimeo introduction when available.
+- **Lesson requests**: Students can submit one lightweight request per tutor while one is pending. Tutors accept or decline from their dashboard. The request model intentionally excludes messaging, payment, booking, and classroom state until those workflows are introduced.
+
 ---
 
 ## User Roles
 
 | Role | Permissions & Capabilities |
 | :--- | :--- |
-| **Student** | Browse approved tutors, book single lessons, manage upcoming/past bookings, update student profile. |
-| **Tutor** | Create draft profile, configure subjects, hourly rate (USD), intro video URL, and availability rules. View earnings ledger and upcoming bookings. Requires admin approval before going public. |
-| **Admin** | Review pending tutor applications (approve/reject), manage manual tutor payouts ledger, oversee platform bookings and refund requests. |
+| **Student** | Browse approved tutors, submit lesson requests, and track tutor responses. |
+| **Tutor** | Create a photo-backed profile, configure subjects, rate, intro video, and availability; respond to lesson requests. Requires admin approval before going public. |
+| **Admin** | Allowlisted operations user who reviews pending tutor applications from the hidden `/admin` queue. |
 
 ---
 
@@ -80,8 +86,8 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 1. **Foundation & Setup** — Scaffold, Tailwind v4, DB connection, design tokens. *(Completed)*
 2. **Authentication & Security** — Better Auth, Google OAuth, route proxy protection. *(Completed)*
 3. **Public Marketing Experience** — Landing page, Subjects catalog, How It Works, About, Become a Tutor. *(Completed)*
-4. **Tutor Onboarding & Admin Moderation** — Profile form, availability editor, admin approval queue. *(Next Focus)*
-5. **Discovery Marketplace** — Authenticated tutor search, subject/language/price filtering, public profile pages.
+4. **Tutor Onboarding & Admin Moderation** — Profile form, availability editor, private approval queue. *(Completed)*
+5. **Discovery Marketplace** — Authenticated tutor directory, public profile pages, and lesson requests. *(Completed)*
 6. **Booking & Scheduling** — Slot selection UI, timezone conversion, fixed lesson duration enforcement.
 7. **Stripe Payments Integration** — Card checkout, payment ledger records, webhook reconciliation, refund request tracking.
 8. **Operations & Dashboards** — Tutor earnings view, student bookings dashboard, admin payout management.

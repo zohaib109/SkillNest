@@ -18,6 +18,7 @@ import {
 } from "@/lib/constants";
 import type { TutorProfileDTO, TutorStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ProfilePhotoPicker } from "./profile-photo-picker";
 
 const TIMEZONES: string[] =
 	typeof Intl !== "undefined" &&
@@ -33,14 +34,14 @@ const TIMEZONES: string[] =
 
 const statusStyles: Record<TutorStatus, string> = {
 	draft: "bg-muted text-muted-foreground",
-	pending: "bg-amber-100 text-amber-700",
-	approved: "bg-emerald-100 text-emerald-700",
+	pending_review: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+	approved: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
 	rejected: "bg-destructive/10 text-destructive",
 };
 
 const statusLabels: Record<TutorStatus, string> = {
 	draft: "Draft",
-	pending: "Pending Review",
+	pending_review: "Pending Review",
 	approved: "Approved & Live",
 	rejected: "Changes Requested",
 };
@@ -57,7 +58,8 @@ export function TutorProfileForm({
 		message: string;
 	} | null>(null);
 
-	const [status] = useState<TutorStatus>(initial?.status ?? "draft");
+	const [status, setStatus] = useState<TutorStatus>(initial?.status ?? "draft");
+	const [photoUrl, setPhotoUrl] = useState(initial?.photoUrl ?? "");
 	const [headline, setHeadline] = useState(initial?.headline ?? "");
 	const [bio, setBio] = useState(initial?.bio ?? "");
 	const [subjects, setSubjects] = useState<string[]>(initial?.subjects ?? []);
@@ -97,6 +99,7 @@ export function TutorProfileForm({
 
 	function buildInput() {
 		return {
+			photoUrl,
 			headline: headline.trim(),
 			bio: bio.trim(),
 			subjects,
@@ -116,6 +119,7 @@ export function TutorProfileForm({
 			const result = await saveTutorProfile(buildInput());
 			if (result.success) {
 				setFeedback({ type: "success", message: "Profile saved." });
+				if (status === "rejected") setStatus("draft");
 				router.refresh();
 			} else {
 				setFeedback({ type: "error", message: result.error });
@@ -133,6 +137,7 @@ export function TutorProfileForm({
 			}
 			const submitResult = await submitTutorProfileForReview();
 			if (submitResult.success) {
+				setStatus("pending_review");
 				setFeedback({
 					type: "success",
 					message: "Submitted for admin review!",
@@ -180,6 +185,18 @@ export function TutorProfileForm({
 					{feedback.message}
 				</div>
 			)}
+
+			<Field
+				label="Profile photo"
+				hint="A clear headshot helps students recognize you."
+			>
+				<ProfilePhotoPicker
+					value={photoUrl}
+					name={initial?.userName ?? "Tutor"}
+					onChange={setPhotoUrl}
+					disabled={isPending}
+				/>
+			</Field>
 
 			{/* Headline */}
 			<Field label="Headline" hint="A short, catchy tagline (10–120 chars).">
@@ -328,9 +345,15 @@ export function TutorProfileForm({
 				<Button
 					type="button"
 					onClick={handleSubmitForReview}
-					disabled={isPending || status === "approved"}
+					disabled={
+						isPending || status === "approved" || status === "pending_review"
+					}
 				>
-					{status === "approved" ? "Already Approved" : "Submit for Review"}
+					{status === "approved"
+						? "Already Approved"
+						: status === "pending_review"
+							? "Under Review"
+							: "Submit for Review"}
 				</Button>
 			</div>
 		</div>

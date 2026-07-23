@@ -33,7 +33,7 @@ export default async function DashboardLayout({
 			<DashboardSidebar role={role} />
 
 			{/* Main Content Area */}
-			<main className="flex-1 overflow-y-auto bg-background p-6 sm:p-8 lg:p-10">
+			<main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
 				{children}
 			</main>
 		</div>

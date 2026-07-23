@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/complete-profile", "/tutors"];
+const protectedRoutes = ["/admin", "/dashboard", "/complete-profile", "/tutors"];
 
 export default function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;

@@ -16,6 +16,9 @@ export default async function CompleteProfilePage() {
 	}
 
 	const profile = await getTutorProfileByUserId(session.user.id);
+	if (profile?.status === "pending_review" || profile?.status === "approved") {
+		redirect("/dashboard");
+	}
 
 	return (
 		<main className="flex-1 bg-background py-10 sm:py-16">

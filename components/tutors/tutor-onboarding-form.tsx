@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { saveAvailability, saveTutorProfile } from "@/actions/tutors";
+import {
+	saveAvailability,
+	saveTutorProfile,
+	submitTutorProfileForReview,
+} from "@/actions/tutors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -10,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DAYS_OF_WEEK, SUBJECTS } from "@/lib/constants";
 import type { AvailabilityRule, TutorProfileDTO } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ProfilePhotoPicker } from "./profile-photo-picker";
 
 // Display order for days of week: Monday first, Sunday last
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -29,6 +34,10 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 	// Core Onboarding Fields
 	const [headline, setHeadline] = useState(initial?.headline ?? "");
 	const [bio, setBio] = useState(initial?.bio ?? "");
+	const [photoUrl, setPhotoUrl] = useState(initial?.photoUrl ?? "");
+	const [introVideoUrl, setIntroVideoUrl] = useState(
+		initial?.introVideoUrl ?? "",
+	);
 	const [hourlyRate, setHourlyRate] = useState(
 		initial?.hourlyRate ? String(initial.hourlyRate) : "25",
 	);
@@ -100,6 +109,13 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 			});
 			return;
 		}
+		if (!photoUrl) {
+			setFeedback({
+				type: "error",
+				message: "Add a profile photo before continuing.",
+			});
+			return;
+		}
 
 		const rateNum = Number(hourlyRate);
 		if (!rateNum || rateNum < 1) {
@@ -117,13 +133,14 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 		];
 
 		const profileInput = {
+			photoUrl,
 			headline: headline.trim(),
 			bio: bio.trim(),
 			subjects: allSubjects,
 			languages: initial?.languages?.length ? initial.languages : ["English"],
 			hourlyRate: rateNum,
 			currency: initial?.currency || "USD",
-			introVideoUrl: initial?.introVideoUrl || "",
+			introVideoUrl: introVideoUrl.trim(),
 			country: initial?.country || "Pakistan",
 			timezone: initial?.timezone || "Asia/Karachi",
 			lessonDurations: initial?.lessonDurations?.length
@@ -146,7 +163,13 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 				return;
 			}
 
-			// On Success, redirect to dashboard
+			const reviewResult = await submitTutorProfileForReview();
+			if (!reviewResult.success) {
+				setFeedback({ type: "error", message: reviewResult.error });
+				return;
+			}
+
+			// New tutor profiles enter the private pending-review workspace.
 			router.push("/dashboard");
 			router.refresh();
 		});
@@ -169,9 +192,23 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 
 			{/* Section 1: Basic Info */}
 			<div className="flex flex-col gap-6 rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-xs">
-				<h2 className="text-xl font-bold tracking-tight text-foreground border-b border-border/60 pb-3">
-					1. Professional Overview
-				</h2>
+				<div className="border-b border-border/60 pb-3">
+					<h2 className="text-xl font-bold tracking-tight text-foreground">
+						1. Teaching profile
+					</h2>
+					<p className="mt-1 text-xs text-muted-foreground">
+						This is what the review team and students will see.
+					</p>
+				</div>
+
+				<Field label="Profile photo" hint="Use a clear, friendly headshot.">
+					<ProfilePhotoPicker
+						value={photoUrl}
+						name={initial?.userName ?? "Tutor"}
+						onChange={setPhotoUrl}
+						disabled={isPending}
+					/>
+				</Field>
 
 				<Field
 					label="Professional Headline"
@@ -183,6 +220,18 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 						placeholder="e.g. Experienced Mathematics & Physics Instructor"
 						maxLength={120}
 						required
+					/>
+				</Field>
+
+				<Field
+					label="Intro video (optional)"
+					hint="A YouTube or Vimeo link helps students get to know you."
+				>
+					<Input
+						type="url"
+						value={introVideoUrl}
+						onChange={(event) => setIntroVideoUrl(event.target.value)}
+						placeholder="https://youtube.com/watch?v=..."
 					/>
 				</Field>
 
@@ -354,7 +403,7 @@ export function TutorOnboardingForm({ initial }: TutorOnboardingFormProps) {
 					disabled={isPending}
 					className="min-w-48"
 				>
-					{isPending ? "Saving Profile..." : "Complete Profile & Continue"}
+					{isPending ? "Submitting profile..." : "Submit profile for review"}
 				</Button>
 			</div>
 		</form>

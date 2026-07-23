@@ -1,36 +1,27 @@
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { TutorDirectory } from "@/components/tutors/tutor-directory";
+import { requireUser } from "@/lib/permissions";
+import { getApprovedTutorProfiles } from "@/lib/tutors";
 
-export default function TutorsPage() {
+export default async function TutorsPage() {
+	await requireUser();
+	const profiles = await getApprovedTutorProfiles();
+
 	return (
-		<main className="flex-1">
-			<section className="bg-background">
-				<div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-					<div className="flex flex-col items-center gap-6 text-center">
-						<h1 className="text-4xl tracking-tight text-foreground sm:text-5xl">
-							Find a Tutor
-						</h1>
-						<p className="max-w-2xl text-lg text-muted-foreground">
-							Browse our curated directory of expert tutors. Filter by subject,
-							price, language, and availability.
-						</p>
-						<div className="rounded-2xl border border-dashed border-border bg-white p-12">
-							<p className="text-sm text-muted-foreground">
-								Tutor directory with search and filters coming in Phase 3.
-							</p>
-						</div>
-						<Link
-							href="/sign-up"
-							className={buttonVariants({
-								variant: "default",
-								size: "lg",
-								className: "rounded-full",
-							})}
-						>
-							Sign Up to Get Notified
-						</Link>
-					</div>
-				</div>
+		<main className="flex-1 bg-background py-8 sm:py-10">
+			<section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				<header className="mb-7 flex flex-col gap-2 border-b border-border pb-5">
+					<p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
+						Verified educators
+					</p>
+					<h1 className="text-3xl tracking-tight text-foreground sm:text-4xl">
+						Find a tutor
+					</h1>
+					<p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+						Explore approved tutors, compare their teaching focus, and send a lesson
+						request when one feels right for your goal.
+					</p>
+				</header>
+				<TutorDirectory profiles={profiles} />
 			</section>
 		</main>
 	);

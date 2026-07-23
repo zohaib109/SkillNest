@@ -2,6 +2,13 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-server";
 import type { Role } from "@/lib/types";
 
+export const ADMIN_EMAILS = ["zohaibammar33@gmail.com"] as const;
+
+export function isAdminEmail(email: string | null | undefined) {
+	const normalizedEmail = email?.trim().toLowerCase();
+	return ADMIN_EMAILS.some((adminEmail) => adminEmail === normalizedEmail);
+}
+
 /**
  * Role & authorization helpers.
  *
@@ -22,6 +29,15 @@ export async function requireUser() {
 export async function requireRole(role: Role) {
 	const session = await requireUser();
 	if (session.user.role !== role) {
+		redirect("/dashboard");
+	}
+	return session;
+}
+
+/** The private moderation area is intentionally email allowlist based, not role based. */
+export async function requireAdmin() {
+	const session = await requireUser();
+	if (!isAdminEmail(session.user.email)) {
 		redirect("/dashboard");
 	}
 	return session;

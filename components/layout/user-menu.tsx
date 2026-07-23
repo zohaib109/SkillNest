@@ -25,12 +25,15 @@ const roleLinks: Record<Role, { href: string; label: string }[]> = {
 	],
 	tutor: [
 		{ href: "/dashboard", label: "Dashboard Overview" },
-		{ href: "/dashboard/profile", label: "My Profile" },
+		{ href: "/dashboard/profile", label: "Edit Profile" },
 		{ href: "/dashboard/availability", label: "Availability Settings" },
+		{ href: "/dashboard/intro-video", label: "Intro Video" },
+		{ href: "/dashboard/requests", label: "Lesson Requests" },
+		{ href: "/dashboard/earnings", label: "Earnings & Activity" },
 	],
 	admin: [
 		{ href: "/dashboard", label: "Admin Overview" },
-		{ href: "/dashboard/admin/tutors", label: "Manage Tutors" },
+		{ href: "/admin", label: "Tutor Review" },
 		{ href: "/dashboard/admin/bookings", label: "All Bookings" },
 		{ href: "/dashboard/admin/payouts", label: "Process Payouts" },
 	],

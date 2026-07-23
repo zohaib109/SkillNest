@@ -35,6 +35,7 @@ Tutoring-marketplace/
 │   │   ├── sign-in/page.tsx   # Sign-in page (loads SignInForm)
 │   │   └── sign-up/page.tsx   # Sign-up page (redirects to sign-in tab)
 │   ├── complete-profile/      # Tutor onboarding route (`page.tsx`)
+│   ├── admin/                 # Hidden email-allowlisted tutor review queue
 │   ├── subjects/page.tsx      # Standalone Subjects We Teach catalog
 │   ├── how-it-works/page.tsx  # Onboarding process guide
 │   ├── about/page.tsx         # Platform mission, vision & values
@@ -59,7 +60,8 @@ Tutoring-marketplace/
 │   ├── permissions.ts         # Role and approval authorization checks
 │   └── utils.ts               # Classname utility helpers (cn)
 └── models/                    # Mongoose database models
-    └── TutorProfile.ts        # Tutor profile schema & model definition
+    ├── TutorProfile.ts        # Tutor profile schema & model definition
+    └── LessonRequest.ts       # Lightweight student-to-tutor request model
 ```
 
 ---
@@ -70,7 +72,7 @@ Tutoring-marketplace/
 Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as the official network boundary handler.
 
 - **File**: `proxy.ts`
-- **Protected Routes**: `/dashboard`, `/complete-profile`, `/tutors`.
+- **Protected Routes**: `/admin`, `/dashboard`, `/complete-profile`, `/tutors`.
 - **Session Check**: Verifies `better-auth.session_token` or `__Secure-better-auth.session_token` cookie (note the **underscore**, not hyphen).
 - **Redirect Behavior**:
   - Unauthenticated requests to protected paths are redirected to `/sign-in?callbackUrl=<pathname>`.
@@ -107,9 +109,12 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 - **`TutorProfile` (`models/TutorProfile.ts`)**:
   - `userId` (String, unique, indexed): Links to Better Auth `user.id`.
   - `slug` (String, unique, indexed): URL-friendly profile identifier.
-  - Profile info: `headline`, `bio`, `subjects`, `languages`, `hourlyRate`, `currency`, `country`, `timezone`, `introVideoUrl`.
+  - Profile info: `photoUrl`, `headline`, `bio`, `subjects`, `languages`, `hourlyRate`, `currency`, `country`, `timezone`, `introVideoUrl`.
   - Scheduling: `availabilityRules` (array of `{ dayOfWeek, startTime, endTime }`), `lessonDurations` (array of numbers, e.g. `[60]`).
-  - Moderation: `status` (`"draft"` | `"pending"` | `"approved"` | `"rejected"`), `isApproved` (Boolean, indexed).
+  - Moderation: `status` (`"draft"` | `"pending_review"` | `"approved"` | `"rejected"`), `isApproved` (Boolean, indexed).
+- **`LessonRequest` (`models/LessonRequest.ts`)**:
+  - A pre-booking request with denormalized tutor/student identity, subject, duration, preferred schedule, message, and a `pending` / `accepted` / `declined` state.
+  - It intentionally contains no payment, booking, calendar, or messaging records.
 - **Planned Models**: `Booking`, `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
 
 ---

@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { approveTutor, rejectTutor } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { DAYS_OF_WEEK } from "@/lib/constants";
 import type { TutorProfileDTO } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -66,22 +67,36 @@ export function TutorModerationList({
 			{profiles.map((profile) => (
 				<div
 					key={profile.id}
-					className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-6"
+					className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-5 shadow-2xs sm:p-6"
 				>
 					<div className="flex flex-wrap items-start justify-between gap-3">
-						<div className="flex flex-col gap-1">
-							<h3 className="text-lg text-foreground">
-								{profile.userName || "Unnamed tutor"}
-							</h3>
-							<p className="text-sm text-muted-foreground">
-								{profile.userEmail}
-							</p>
+						<div className="flex min-w-0 items-center gap-3">
+							<div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-sm font-bold text-primary">
+								{profile.photoUrl ? (
+									// biome-ignore lint/performance/noImgElement: profile images are user-provided data URLs
+									<img
+										src={profile.photoUrl}
+										alt=""
+										className="h-full w-full object-cover"
+									/>
+								) : (
+									profile.userName.charAt(0).toUpperCase() || "T"
+								)}
+							</div>
+							<div className="min-w-0">
+								<h3 className="truncate text-lg text-foreground">
+									{profile.userName || "Unnamed tutor"}
+								</h3>
+								<p className="truncate text-sm text-muted-foreground">
+									{profile.userEmail}
+								</p>
+							</div>
 						</div>
 						<span
 							className={cn(
 								"inline-flex items-center rounded-full px-3 py-1 text-xs font-medium capitalize",
-								profile.status === "pending"
-									? "bg-amber-100 text-amber-700"
+								profile.status === "pending_review"
+									? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
 									: profile.status === "approved"
 										? "bg-emerald-100 text-emerald-700"
 										: profile.status === "rejected"
@@ -89,19 +104,32 @@ export function TutorModerationList({
 											: "bg-muted text-muted-foreground",
 							)}
 						>
-							{profile.status}
+							{profile.status.replace("_", " ")}
 						</span>
 					</div>
 
 					<div className="flex flex-col gap-2 text-sm">
 						<p className="font-medium text-foreground">{profile.headline}</p>
-						<p className="text-muted-foreground">{profile.bio}</p>
+						<p className="line-clamp-3 text-muted-foreground">{profile.bio}</p>
 					</div>
 
 					<div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
 						<span>
 							<span className="font-medium text-foreground">Subjects:</span>{" "}
 							{profile.subjects.join(", ") || "—"}
+						</span>
+						<span>
+							<span className="font-medium text-foreground">Availability:</span>{" "}
+							{profile.availabilityRules.length
+								? profile.availabilityRules
+										.slice(0, 3)
+										.map(
+											(rule) =>
+												`${DAYS_OF_WEEK[rule.dayOfWeek].slice(0, 3)} ${rule.startTime}–${rule.endTime}`,
+										)
+										.join(", ") +
+										(profile.availabilityRules.length > 3 ? " + more" : "")
+								: "Not set"}
 						</span>
 						<span>
 							<span className="font-medium text-foreground">Languages:</span>{" "}

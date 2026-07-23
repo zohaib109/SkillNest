@@ -12,6 +12,15 @@ const languageValues = LANGUAGES as readonly string[];
 const durationValues = LESSON_DURATIONS as readonly number[];
 
 export const tutorProfileSchema = z.object({
+	photoUrl: z
+		.string()
+		.trim()
+		.min(1, "Add a profile photo before submitting for review")
+		.max(1_500_000, "Profile photo is too large. Please choose a smaller image")
+		.refine(
+			(value) => value.startsWith("data:image/") || /^https?:\/\//.test(value),
+			{ message: "Add a valid profile photo" },
+		),
 	headline: z
 		.string()
 		.trim()
@@ -74,6 +83,36 @@ export const availabilitySchema = z.object({
 export const rejectTutorSchema = z.object({
 	profileId: z.string().min(1),
 	reason: z.string().trim().min(5, "Please provide a rejection reason"),
+});
+
+export const lessonRequestSchema = z.object({
+	tutorSlug: z.string().trim().min(1),
+	subject: z
+		.string()
+		.trim()
+		.refine((value) => subjectValues.includes(value), {
+			message: "Choose a valid subject",
+		}),
+	duration: z
+		.number()
+		.refine((value) => durationValues.includes(value), {
+			message: "Choose a valid lesson duration",
+		}),
+	preferredSchedule: z
+		.string()
+		.trim()
+		.min(5, "Tell the tutor when you would like to learn")
+		.max(280, "Preferred schedule is too long"),
+	message: z
+		.string()
+		.trim()
+		.min(10, "Share a little about what you would like help with")
+		.max(1_000, "Message is too long"),
+});
+
+export const lessonRequestDecisionSchema = z.object({
+	requestId: z.string().min(1),
+	decision: z.enum(["accepted", "declined"]),
 });
 
 export type TutorProfileSchema = z.infer<typeof tutorProfileSchema>;

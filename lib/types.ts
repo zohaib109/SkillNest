@@ -23,6 +23,7 @@ export interface TutorProfileDTO {
 	userId: string;
 	userName: string;
 	userEmail: string;
+	photoUrl: string;
 	slug: string;
 	headline: string;
 	bio: string;
@@ -45,6 +46,7 @@ export interface TutorProfileDTO {
 
 /** Input payload for saving a tutor profile (from the editor form). */
 export interface TutorProfileInput {
+	photoUrl: string;
 	headline: string;
 	bio: string;
 	subjects: string[];
@@ -55,4 +57,33 @@ export interface TutorProfileInput {
 	country: string;
 	timezone: string;
 	lessonDurations: number[];
+}
+
+export type LessonRequestStatus = "pending" | "accepted" | "declined";
+
+export interface LessonRequestDTO {
+	id: string;
+	tutorId: string;
+	tutorProfileId: string;
+	tutorName: string;
+	tutorSlug: string;
+	studentId: string;
+	studentName: string;
+	studentEmail: string;
+	subject: string;
+	duration: number;
+	preferredSchedule: string;
+	message: string;
+	status: LessonRequestStatus;
+	respondedAt: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface LessonRequestInput {
+	tutorSlug: string;
+	subject: string;
+	duration: number;
+	preferredSchedule: string;
+	message: string;
 }

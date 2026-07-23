@@ -65,11 +65,16 @@ export async function saveTutorProfile(
 	// Editing a previously rejected profile returns it to draft for resubmission.
 	if (profile.status === "rejected") {
 		profile.status = "draft";
+		profile.isApproved = false;
 		profile.rejectionReason = "";
 	}
 
 	await profile.save();
+	revalidatePath("/dashboard");
 	revalidatePath("/dashboard/profile");
+	revalidatePath("/complete-profile");
+	revalidatePath("/tutors");
+	revalidatePath(`/tutors/${profile.slug}`);
 	return { success: true };
 }
 
@@ -87,6 +92,7 @@ export async function submitTutorProfileForReview(): Promise<ActionResult> {
 	}
 
 	const parsed = tutorProfileSchema.safeParse({
+		photoUrl: profile.photoUrl,
 		headline: profile.headline,
 		bio: profile.bio,
 		subjects: profile.subjects,
@@ -110,9 +116,12 @@ export async function submitTutorProfileForReview(): Promise<ActionResult> {
 	}
 
 	profile.status = "pending_review";
+	profile.isApproved = false;
 	profile.rejectionReason = "";
 	await profile.save();
+	revalidatePath("/dashboard");
 	revalidatePath("/dashboard/profile");
+	revalidatePath("/admin");
 	return { success: true };
 }
 
@@ -142,5 +151,43 @@ export async function saveAvailability(
 	profile.set("availabilityRules", parsed.data.rules);
 	await profile.save();
 	revalidatePath("/dashboard/availability");
+	revalidatePath(`/tutors/${profile.slug}`);
+	return { success: true };
+}
+
+export async function saveTutorIntroVideo(
+	introVideoUrl: string,
+): Promise<ActionResult> {
+	const session = await getSession();
+	if (!session) return { success: false, error: "Unauthorized" };
+	if (session.user.role !== "tutor") {
+		return { success: false, error: "Only tutors can update an intro video" };
+	}
+
+	const parsed = tutorProfileSchema.shape.introVideoUrl.safeParse(introVideoUrl);
+	if (!parsed.success) {
+		return {
+			success: false,
+			error: parsed.error.issues[0]?.message ?? "Invalid intro video URL",
+		};
+	}
+
+	await connectDB();
+	const profile = await ensureProfile(
+		session.user.id,
+		session.user.name ?? "",
+		session.user.email ?? "",
+	);
+	profile.introVideoUrl = parsed.data;
+	if (profile.status === "rejected") {
+		profile.status = "draft";
+		profile.isApproved = false;
+		profile.rejectionReason = "";
+	}
+	await profile.save();
+	revalidatePath("/dashboard");
+	revalidatePath("/dashboard/intro-video");
+	revalidatePath("/dashboard/profile");
+	revalidatePath(`/tutors/${profile.slug}`);
 	return { success: true };
 }

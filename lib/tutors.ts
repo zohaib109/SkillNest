@@ -19,6 +19,7 @@ function serialize(doc: LeanTutor): TutorProfileDTO {
 		userId: doc.userId,
 		userName: doc.userName ?? "",
 		userEmail: doc.userEmail ?? "",
+		photoUrl: doc.photoUrl ?? "",
 		slug: doc.slug,
 		headline: doc.headline ?? "",
 		bio: doc.bio ?? "",
@@ -68,4 +69,27 @@ export async function getAllTutorProfiles(): Promise<TutorProfileDTO[]> {
 		.sort({ updatedAt: -1 })
 		.lean<LeanTutor[]>();
 	return docs.map(serialize);
+}
+
+export async function getApprovedTutorProfiles(): Promise<TutorProfileDTO[]> {
+	await connectDB();
+	const docs = await TutorProfile.find({
+		status: "approved",
+		isApproved: true,
+	})
+		.sort({ approvedAt: -1, updatedAt: -1 })
+		.lean<LeanTutor[]>();
+	return docs.map(serialize);
+}
+
+export async function getApprovedTutorProfileBySlug(
+	slug: string,
+): Promise<TutorProfileDTO | null> {
+	await connectDB();
+	const doc = await TutorProfile.findOne({
+		slug,
+		status: "approved",
+		isApproved: true,
+	}).lean<LeanTutor>();
+	return doc ? serialize(doc) : null;
 }
