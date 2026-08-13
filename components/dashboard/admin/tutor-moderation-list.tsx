@@ -80,7 +80,7 @@ export function TutorModerationList({
 						<span
 							className={cn(
 								"inline-flex items-center rounded-full px-3 py-1 text-xs font-medium capitalize",
-								profile.status === "pending"
+								profile.status === "pending_review"
 									? "bg-amber-100 text-amber-700"
 									: profile.status === "approved"
 										? "bg-emerald-100 text-emerald-700"
@@ -89,7 +89,7 @@ export function TutorModerationList({
 											: "bg-muted text-muted-foreground",
 							)}
 						>
-							{profile.status}
+							{profile.status.replace("_", " ")}
 						</span>
 					</div>
 
@@ -128,62 +128,63 @@ export function TutorModerationList({
 						</a>
 					)}
 
-					{rejectingId === profile.id ? (
-						<div className="flex flex-col gap-3 border-t border-border pt-4">
-							<Textarea
-								value={reason}
-								onChange={(e) => setReason(e.target.value)}
-								placeholder="Explain what the tutor needs to change…"
-								rows={3}
-							/>
-							<div className="flex items-center gap-3">
+					{profile.status === "pending_review" &&
+						(rejectingId === profile.id ? (
+							<div className="flex flex-col gap-3 border-t border-border pt-4">
+								<Textarea
+									value={reason}
+									onChange={(e) => setReason(e.target.value)}
+									placeholder="Explain what the tutor needs to change…"
+									rows={3}
+								/>
+								<div className="flex items-center gap-3">
+									<Button
+										type="button"
+										variant="destructive"
+										size="sm"
+										onClick={() => handleReject(profile.id)}
+										disabled={isPending}
+									>
+										Confirm Rejection
+									</Button>
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => {
+											setRejectingId(null);
+											setReason("");
+										}}
+										disabled={isPending}
+									>
+										Cancel
+									</Button>
+								</div>
+							</div>
+						) : (
+							<div className="flex items-center gap-3 border-t border-border pt-4">
 								<Button
 									type="button"
-									variant="destructive"
 									size="sm"
-									onClick={() => handleReject(profile.id)}
+									onClick={() => handleApprove(profile.id)}
 									disabled={isPending}
 								>
-									Confirm Rejection
+									Approve
 								</Button>
 								<Button
 									type="button"
-									variant="ghost"
+									variant="outline"
 									size="sm"
 									onClick={() => {
-										setRejectingId(null);
+										setRejectingId(profile.id);
 										setReason("");
 									}}
 									disabled={isPending}
 								>
-									Cancel
+									Reject
 								</Button>
 							</div>
-						</div>
-					) : (
-						<div className="flex items-center gap-3 border-t border-border pt-4">
-							<Button
-								type="button"
-								size="sm"
-								onClick={() => handleApprove(profile.id)}
-								disabled={isPending || profile.status === "approved"}
-							>
-								Approve
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									setRejectingId(profile.id);
-									setReason("");
-								}}
-								disabled={isPending}
-							>
-								Reject
-							</Button>
-						</div>
-					)}
+						))}
 				</div>
 			))}
 		</div>

@@ -55,10 +55,13 @@ export const passwordSchema = z
 			"Password must contain at least one special character (e.g. !@#$%^&*)",
 	});
 
-export const signUpSchema = z.object({
+export const signUpCredentialsSchema = z.object({
 	name: nameSchema,
 	email: emailSchema,
 	password: passwordSchema,
+});
+
+export const signUpSchema = signUpCredentialsSchema.extend({
 	role: z.enum(["student", "tutor"]),
 });
 

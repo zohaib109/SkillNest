@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signIn, signUp } from "@/lib/auth-client";
+import { sanitizeInternalPath } from "@/lib/navigation";
 import { signInSchema, signUpSchema } from "@/lib/validators/auth";
 
 type Tab = "login" | "signup";
@@ -13,9 +14,11 @@ type Role = "student" | "tutor";
 export function SignInForm() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
-	const initialTab = (searchParams.get("tab") as Tab) ?? "login";
-	const initialRole = (searchParams.get("role") as Role) ?? "student";
+	const callbackUrl = sanitizeInternalPath(searchParams.get("callbackUrl"));
+	const tabParam = searchParams.get("tab");
+	const roleParam = searchParams.get("role");
+	const initialTab: Tab = tabParam === "signup" ? "signup" : "login";
+	const initialRole: Role = roleParam === "tutor" ? "tutor" : "student";
 
 	const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 	const [role, setRole] = useState<Role>(initialRole);
@@ -103,9 +106,8 @@ export function SignInForm() {
 						name: validation.data.name,
 						email: validation.data.email,
 						password: validation.data.password,
-						role: validation.data.role,
 						callbackURL: targetUrl,
-					} as any,
+					},
 					{
 						onSuccess: () => {
 							router.push(targetUrl);

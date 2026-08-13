@@ -7,9 +7,9 @@
  *
  * PRODUCTION SETUP REQUIREMENTS:
  * To activate real email delivery in production:
- * 1. Install your preferred mail provider SDK (e.g., `pnpm add resend`).
- * 2. Configure `RESEND_API_KEY` (or SMTP credentials) in `.env.local`.
- * 3. Replace the dev fallback block in `sendVerificationEmail()` with the provider API call.
+ * 1. Select a transactional mail provider and verify the sending domain.
+ * 2. Install its SDK and configure credentials in `.env.local`.
+ * 3. Replace the production guard in `sendVerificationEmail()` with the provider call.
  */
 
 interface SendVerificationEmailOptions {
@@ -24,16 +24,10 @@ export async function sendVerificationEmail({
 	user,
 	url,
 }: SendVerificationEmailOptions): Promise<void> {
-	// Future Production Email Provider Hook (e.g. Resend / SendGrid)
-	if (process.env.NODE_ENV === "production" && process.env.RESEND_API_KEY) {
-		// TODO: Replace with production mail provider call
-		// await resend.emails.send({
-		// 	from: "SkillNest <noreply@skillnest.com>",
-		// 	to: user.email,
-		// 	subject: "Verify your SkillNest email address",
-		// 	html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
-		// });
-		return;
+	if (process.env.NODE_ENV === "production") {
+		throw new Error(
+			"Production email delivery is not configured. Configure a transactional email provider before deployment.",
+		);
 	}
 
 	// Development Terminal Mailer

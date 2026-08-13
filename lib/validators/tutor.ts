@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { hasOverlappingAvailabilityRules } from "@/lib/availability";
 import {
 	CURRENCIES,
 	LANGUAGES,
@@ -43,7 +44,7 @@ export const tutorProfileSchema = z.object({
 		.string()
 		.trim()
 		.url("Enter a valid URL")
-		.refine((u) => /youtube\.com|youtu\.be|vimeo\.com/.test(u), {
+		.refine((u) => /youtube\.com|youtu\.be|vimeo\.com/i.test(u), {
 			message: "Only YouTube or Vimeo links are supported",
 		})
 		.or(z.literal("")),
@@ -67,12 +68,32 @@ export const availabilityRuleSchema = z
 		message: "End time must be after start time",
 	});
 
-export const availabilitySchema = z.object({
-	rules: z.array(availabilityRuleSchema),
+export const availabilitySchema = z
+	.object({
+		rules: z
+			.array(availabilityRuleSchema)
+			.max(21, "Too many availability slots"),
+	})
+	.superRefine(({ rules }, context) => {
+		if (hasOverlappingAvailabilityRules(rules)) {
+			context.addIssue({
+				code: "custom",
+				path: ["rules"],
+				message: "Availability slots cannot overlap",
+			});
+		}
+	});
+
+const tutorProfileIdSchema = z
+	.string()
+	.regex(/^[a-f\d]{24}$/i, "Invalid tutor profile id");
+
+export const approveTutorSchema = z.object({
+	profileId: tutorProfileIdSchema,
 });
 
 export const rejectTutorSchema = z.object({
-	profileId: z.string().min(1),
+	profileId: tutorProfileIdSchema,
 	reason: z.string().trim().min(5, "Please provide a rejection reason"),
 });
 

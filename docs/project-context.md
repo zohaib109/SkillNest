@@ -23,6 +23,16 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 7. **Localization**: English only for launch. No i18n routing or translation dictionaries in v1.
 8. **Public Privacy**: Unauthenticated users cannot search tutors, browse tutor catalogs, or view tutor profiles. Public pages provide conversion-focused marketing, curriculum subject listings, and platform information only.
 
+## Confirmed Business & Launch Context
+
+- SkillNest is registered in Islamabad, Pakistan, and its business bank account will be located in Pakistan.
+- Students are international; the tutor supply launch remains Pakistan-first.
+- The application has never been deployed. All existing MongoDB records are test data and may be reset or migrated during development.
+- Booking-linked messaging and Agora browser video lessons are required for the first public launch.
+- Tutor document, credential, and background verification is deferred; initial moderation reviews profile quality only.
+- Deployment is flexible and will be selected during production hardening rather than being locked to Hostinger.
+- Commercial policy values remain temporary mocks. The current centralized defaults live in `lib/policies.ts`.
+
 ---
 
 ## What Has Been Built
@@ -37,13 +47,23 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
   - Configured `autoSignInAfterVerification: true` for email verification redirect flow.
   - **Development Email Verification**: Implemented modular `lib/email.ts` mailer service. In local development, `sendVerificationEmail` prints a formatted ASCII box with the exact verification link to the server terminal. Added dev-mode notice in `EmailVerificationPrompt` component.
 - **Route Protection**: Next.js 16 `proxy.ts` root middleware checks the `better-auth.session_token` cookie to guard `/dashboard`, `/complete-profile`, and `/tutors`. Unauthenticated users are redirected to `/sign-in`.
+- **Authentication Hardening (August 2026)**:
+  - Public registration can create only `student` or `tutor` accounts; `admin` is server-owned and must be provisioned operationally.
+  - Email signup validation is enforced inside Better Auth on the server, not only in the client form.
+  - Authentication callback URLs are constrained to internal SkillNest paths.
 
 ### Tutor Onboarding Flow
-- **Dedicated Onboarding (`app/complete-profile/page.tsx` & `components/tutors/tutor-onboarding-form.tsx`)**:
+- **Dedicated Onboarding (`app/complete-profile/page.tsx`, `TutorProfileForm`, and `AvailabilityEditor`)**:
   - After tutor account creation, users are routed to `/complete-profile` (role-protected, `role === "tutor"`).
-  - Collects core MVP profile fields: Professional Headline (10–120 chars), Short Bio (50–2000 chars), Hourly Rate ($1–$10,000 USD), Primary & Additional Subjects (reusing official `SUBJECTS` list from `lib/constants.ts`), and Weekly Teaching Availability.
+  - Collects headline, bio, rate/currency, subjects, languages, lesson durations, country/timezone, optional intro video, and weekly availability.
   - Form components use theme-aware controls (`bg-card`, `text-foreground`, `[&>option]:bg-card [&>option]:text-foreground`) for legibility in both Light and Dark modes.
-  - Saves profile data via `saveTutorProfile` and `saveAvailability` server actions, then redirects to `/dashboard`.
+  - Saves profile and availability through separate server actions and explicitly submits the complete profile for admin review.
+- **Moderation Integrity (August 2026)**:
+  - The canonical status vocabulary is `draft | pending_review | approved | rejected`.
+  - Profile and availability editing use one full tutor profile editor plus the dedicated availability editor.
+  - Submission requires at least one valid, non-overlapping availability slot.
+  - Admin approval and rejection use atomic status-guarded updates.
+  - Editing approved or pending-review content returns it to draft and removes approval until a new review succeeds.
 
 ### Design System & Theme Engine
 - **Visual Direction**: Warm editorial minimal aesthetic with custom OKLCH color tokens in `app/globals.css`.
@@ -77,15 +97,16 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 
 ## Strategic Build Roadmap
 
-1. **Foundation & Setup** — Scaffold, Tailwind v4, DB connection, design tokens. *(Completed)*
-2. **Authentication & Security** — Better Auth, Google OAuth, route proxy protection. *(Completed)*
-3. **Public Marketing Experience** — Landing page, Subjects catalog, How It Works, About, Become a Tutor. *(Completed)*
-4. **Tutor Onboarding & Admin Moderation** — Profile form, availability editor, admin approval queue. *(Next Focus)*
-5. **Discovery Marketplace** — Authenticated tutor search, subject/language/price filtering, public profile pages.
-6. **Booking & Scheduling** — Slot selection UI, timezone conversion, fixed lesson duration enforcement.
-7. **Stripe Payments Integration** — Card checkout, payment ledger records, webhook reconciliation, refund request tracking.
-8. **Operations & Dashboards** — Tutor earnings view, student bookings dashboard, admin payout management.
-9. **Local Pakistani Payments** — PayFast / bSecure wallet integration.
-10. **In-App Messaging** — Booking-linked discussion threads.
-11. **Live Lessons** — Agora WebRTC video room integration.
-12. **Production Hardening** — Hostinger Node server deployment, PM2, domain & SSL configuration.
+The authoritative, acceptance-criteria-driven implementation order is maintained in `docs/roadmap.md`.
+
+Current sequence:
+
+1. Foundation stabilization and tutor moderation integrity.
+2. Authenticated tutor discovery.
+3. Scheduling and atomic booking holds.
+4. Pakistan-compatible international payments and append-only financial ledger.
+5. Operational dashboards and notifications.
+6. Booking-linked messaging.
+7. Agora live lessons.
+8. Reviews, trust, and safety.
+9. Production hardening and public launch.

@@ -36,6 +36,7 @@ function serialize(doc: LeanTutor): TutorProfileDTO {
 			endTime: r.endTime,
 		})),
 		status: (doc.status ?? "draft") as TutorStatus,
+		isApproved: Boolean(doc.isApproved),
 		rejectionReason: doc.rejectionReason ?? "",
 		ratingAverage: doc.ratingAverage ?? 0,
 		reviewCount: doc.reviewCount ?? 0,

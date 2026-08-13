@@ -13,6 +13,7 @@
 | **Auth Engine** | Better Auth | `1.6+` | Identity, session management via native MongoDB driver. |
 | **Validation** | Zod | `4.4+` | Schema validation for API payloads. |
 | **Lint / Format** | Biome | `2.5+` | Formatting and linting (`pnpm lint`, `pnpm lint:fix`). |
+| **Unit Tests** | Vitest | `4.1.5` | Fast domain, validation, and component-adjacent tests. |
 | **Package Manager** | pnpm | Locked | Dependency and workspace manager. |
 
 ---
@@ -25,7 +26,8 @@ Tutoring-marketplace/
 ├── docs/                      # Long-term repository context system
 │   ├── project-context.md     # Product vision, scope, roadmap & current state
 │   ├── architecture.md        # Technical stack, structure, routing & data models
-│   └── decisions.md           # Architectural & business decisions log
+│   ├── decisions.md           # Architectural & business decisions log
+│   └── roadmap.md             # Milestones, current focus & acceptance criteria
 ├── proxy.ts                   # Next.js 16 route proxy middleware
 ├── app/                       # Next.js App Router root
 │   ├── layout.tsx             # Root layout shell, font imports & theme script
@@ -47,7 +49,7 @@ Tutoring-marketplace/
 │   ├── layout/                # Navbar, MobileMenu, UserMenu, ThemeToggle
 │   ├── forms/                 # SignInForm
 │   ├── dashboard/             # Sidebar, MobileHeader, EmailVerificationPrompt
-│   ├── tutors/                # TutorProfileForm, AvailabilityEditor, TutorOnboardingForm
+│   ├── tutors/                # TutorProfileForm and AvailabilityEditor
 │   └── ui/                    # Base UI primitives (Button, Input, etc.)
 ├── lib/                       # Shared utilities and configurations
 │   ├── auth.ts                # Better Auth server configuration & DB hooks
@@ -56,7 +58,11 @@ Tutoring-marketplace/
 │   ├── db.ts                  # Mongoose singleton connection manager
 │   ├── env.ts                 # Runtime environment validation (Zod)
 │   ├── slug.ts                # Tutor slug generation helpers
+│   ├── availability.ts        # Availability overlap domain validation
+│   ├── navigation.ts          # Internal callback URL safety
 │   ├── permissions.ts         # Role and approval authorization checks
+│   ├── policies.ts            # Central temporary marketplace policy values
+│   ├── registration.ts        # Public registration role constraints
 │   └── utils.ts               # Classname utility helpers (cn)
 └── models/                    # Mongoose database models
     └── TutorProfile.ts        # Tutor profile schema & model definition
@@ -89,7 +95,7 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 ### Server & Client Instances
 - **Server Instance (`lib/auth.ts`)**: Configures `betterAuth({ database: mongodbAdapter(client.db()), ... })`.
   - `user.additionalFields`: `role` (default: `"student"`), `status` (default: `"active"`).
-  - `user.create.before` hook: Assigns user role from request body or `selected_role` cookie.
+  - `user.create.before` hook: Resolves only `student` or `tutor` from the constrained `selected_role` cookie; admin is never public input.
   - `user.create.after` hook: Auto-creates a `TutorProfile` shell document in Mongoose if `user.role === "tutor"`.
 - **Server Helpers (`lib/auth-server.ts`)**:
   - `getSession()`: Reads headers and calls `auth.api.getSession({ headers })`.
@@ -109,8 +115,28 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
   - `slug` (String, unique, indexed): URL-friendly profile identifier.
   - Profile info: `headline`, `bio`, `subjects`, `languages`, `hourlyRate`, `currency`, `country`, `timezone`, `introVideoUrl`.
   - Scheduling: `availabilityRules` (array of `{ dayOfWeek, startTime, endTime }`), `lessonDurations` (array of numbers, e.g. `[60]`).
-  - Moderation: `status` (`"draft"` | `"pending"` | `"approved"` | `"rejected"`), `isApproved` (Boolean, indexed).
+  - Moderation: `status` (`"draft"` | `"pending_review"` | `"approved"` | `"rejected"`), `isApproved` (Boolean, indexed).
 - **Planned Models**: `Booking`, `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
+
+### Tutor Moderation State Machine
+
+```text
+draft -> pending_review -> approved
+                     \-> rejected -> draft
+approved --edit--> draft
+pending_review --edit--> draft
+```
+
+Only `pending_review` profiles may be approved or rejected. Discovery must require both `status: "approved"` and `isApproved: true`. Public-profile edits currently de-list an approved tutor until the new version is reviewed; versioned profile publishing may replace this conservative behavior later.
+
+### Planned Transactional Boundaries
+
+- `Booking`: one purchased lesson, UTC schedule, participant timezone snapshots, lifecycle state.
+- `BookingHold`: short-lived slot reservation used during checkout and enforced atomically.
+- `Payment`: gateway attempt and reconciliation record using integer minor units.
+- `LedgerEntry`: append-only platform commission, tutor earning, refund, adjustment, and payout entries.
+- `Conversation` / `Message`: booking-scoped participant communication.
+- Agora tokens will be issued server-side only for valid booking participants and allowed join windows.
 
 ---
 

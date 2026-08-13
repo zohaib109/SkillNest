@@ -36,6 +36,7 @@ export interface TutorProfileDTO {
 	lessonDurations: number[];
 	availabilityRules: AvailabilityRule[];
 	status: TutorStatus;
+	isApproved: boolean;
 	rejectionReason: string;
 	ratingAverage: number;
 	reviewCount: number;

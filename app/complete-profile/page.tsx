@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { TutorOnboardingForm } from "@/components/tutors/tutor-onboarding-form";
+import { AvailabilityEditor } from "@/components/tutors/availability-editor";
+import { TutorProfileForm } from "@/components/tutors/tutor-profile-form";
 import { getSession } from "@/lib/auth-server";
 import { getTutorProfileByUserId } from "@/lib/tutors";
 
@@ -35,7 +36,22 @@ export default async function CompleteProfilePage() {
 					</p>
 				</div>
 
-				<TutorOnboardingForm initial={profile} />
+				<div className="rounded-3xl border border-border bg-card p-6 shadow-xs sm:p-8">
+					<TutorProfileForm initial={profile} />
+				</div>
+
+				<div className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-6 shadow-xs sm:p-8">
+					<div>
+						<h2 className="text-xl font-bold tracking-tight text-foreground">
+							Weekly availability
+						</h2>
+						<p className="mt-1 text-sm text-muted-foreground">
+							Save at least one teaching slot before submitting your profile for
+							admin review.
+						</p>
+					</div>
+					<AvailabilityEditor initial={profile} />
+				</div>
 			</div>
 		</main>
 	);

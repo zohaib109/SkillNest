@@ -33,14 +33,14 @@ const TIMEZONES: string[] =
 
 const statusStyles: Record<TutorStatus, string> = {
 	draft: "bg-muted text-muted-foreground",
-	pending: "bg-amber-100 text-amber-700",
+	pending_review: "bg-amber-100 text-amber-700",
 	approved: "bg-emerald-100 text-emerald-700",
 	rejected: "bg-destructive/10 text-destructive",
 };
 
 const statusLabels: Record<TutorStatus, string> = {
 	draft: "Draft",
-	pending: "Pending Review",
+	pending_review: "Pending Review",
 	approved: "Approved & Live",
 	rejected: "Changes Requested",
 };
@@ -57,7 +57,7 @@ export function TutorProfileForm({
 		message: string;
 	} | null>(null);
 
-	const [status] = useState<TutorStatus>(initial?.status ?? "draft");
+	const status: TutorStatus = initial?.status ?? "draft";
 	const [headline, setHeadline] = useState(initial?.headline ?? "");
 	const [bio, setBio] = useState(initial?.bio ?? "");
 	const [subjects, setSubjects] = useState<string[]>(initial?.subjects ?? []);
@@ -115,7 +115,13 @@ export function TutorProfileForm({
 		startTransition(async () => {
 			const result = await saveTutorProfile(buildInput());
 			if (result.success) {
-				setFeedback({ type: "success", message: "Profile saved." });
+				setFeedback({
+					type: "success",
+					message:
+						status === "approved" || status === "pending_review"
+							? "Changes saved as a draft. Submit them for a new review when ready."
+							: "Profile saved.",
+				});
 				router.refresh();
 			} else {
 				setFeedback({ type: "error", message: result.error });
@@ -178,6 +184,13 @@ export function TutorProfileForm({
 					)}
 				>
 					{feedback.message}
+				</div>
+			)}
+
+			{(status === "approved" || status === "pending_review") && (
+				<div className="rounded-xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+					Editing and saving moderated profile details returns the profile to
+					draft and requires a new admin review.
 				</div>
 			)}
 
@@ -328,9 +341,15 @@ export function TutorProfileForm({
 				<Button
 					type="button"
 					onClick={handleSubmitForReview}
-					disabled={isPending || status === "approved"}
+					disabled={
+						isPending || status === "approved" || status === "pending_review"
+					}
 				>
-					{status === "approved" ? "Already Approved" : "Submit for Review"}
+					{status === "approved"
+						? "Already Approved"
+						: status === "pending_review"
+							? "Awaiting Review"
+							: "Submit for Review"}
 				</Button>
 			</div>
 		</div>

@@ -5,8 +5,8 @@ import { getAllTutorProfiles } from "@/lib/tutors";
 export default async function AdminTutorsPage() {
 	await requireRole("admin");
 	const all = await getAllTutorProfiles();
-	const pending = all.filter((p) => p.status === "pending");
-	const others = all.filter((p) => p.status !== "pending");
+	const pending = all.filter((p) => p.status === "pending_review");
+	const others = all.filter((p) => p.status !== "pending_review");
 
 	return (
 		<div className="flex flex-col gap-8">

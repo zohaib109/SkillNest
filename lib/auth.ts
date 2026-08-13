@@ -1,6 +1,13 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { MongoClient } from "mongodb";
+import { sendVerificationEmail } from "@/lib/email";
+import {
+	readSelectedRoleCookie,
+	resolveSelfServiceRole,
+} from "@/lib/registration";
+import { signUpCredentialsSchema } from "@/lib/validators/auth";
 
 const globalForMongo = globalThis as unknown as {
 	mongoClient: MongoClient | undefined;
@@ -13,10 +20,6 @@ if (process.env.NODE_ENV !== "production") {
 	globalForMongo.mongoClient = client;
 }
 
-import { headers } from "next/headers";
-
-import { sendVerificationEmail } from "@/lib/email";
-
 export const auth = betterAuth({
 	baseURL: process.env.BETTER_AUTH_URL,
 	database: mongodbAdapter(client.db()),
@@ -28,6 +31,30 @@ export const auth = betterAuth({
 	},
 	emailAndPassword: {
 		enabled: true,
+		minPasswordLength: 10,
+		maxPasswordLength: 100,
+	},
+	hooks: {
+		before: createAuthMiddleware(async (context) => {
+			if (context.path !== "/sign-up/email") return;
+
+			const parsed = signUpCredentialsSchema.safeParse(context.body);
+			if (!parsed.success) {
+				throw new APIError("BAD_REQUEST", {
+					message: parsed.error.issues[0]?.message ?? "Invalid signup details",
+				});
+			}
+
+			return {
+				context: {
+					...context,
+					body: {
+						...context.body,
+						...parsed.data,
+					},
+				},
+			};
+		}),
 	},
 	socialProviders: {
 		google: {
@@ -45,7 +72,7 @@ export const auth = betterAuth({
 				type: "string",
 				required: true,
 				defaultValue: "student",
-				input: true, // allow client to set during sign-up
+				input: false,
 			},
 			status: {
 				type: "string",
@@ -65,28 +92,17 @@ export const auth = betterAuth({
 	databaseHooks: {
 		user: {
 			create: {
-				before: async (user) => {
-					// Prefer role passed directly in request body (e.g. email signUp)
-					let role = user.role;
+				before: async (user, context) => {
+					const selectedRoleCookie = readSelectedRoleCookie(
+						context?.headers?.get("cookie"),
+					);
 
-					if (!role) {
-						role = "student";
-						try {
-							const headersList = await headers();
-							const cookieHeader = headersList.get("cookie") || "";
-							const match = cookieHeader.match(/selected_role=(student|tutor)/);
-							if (match) {
-								role = match[1];
-							}
-						} catch (e) {
-							console.error("Error reading headers in user create hook:", e);
-						}
-					}
+					const role = resolveSelfServiceRole(user.role, selectedRoleCookie);
 
 					return {
 						data: {
 							...user,
-							role: role,
+							role,
 						},
 					};
 				},
@@ -113,46 +129,11 @@ export const auth = betterAuth({
 									},
 								);
 
-								const headersList = await headers();
-								const cookieHeader = headersList.get("cookie") || "";
-
-								let headline = "Professional Tutor";
-								let hourlyRate = 20;
-								let subjects: string[] = [];
-
-								const headlineMatch = cookieHeader.match(
-									/tutor_headline=([^;]+)/,
-								);
-								if (headlineMatch) {
-									headline = decodeURIComponent(headlineMatch[1]);
-								}
-								const rateMatch = cookieHeader.match(/tutor_rate=(\d+)/);
-								if (rateMatch) {
-									hourlyRate = Number(rateMatch[1]);
-								}
-								const subjectsMatch = cookieHeader.match(
-									/tutor_subjects=([^;]+)/,
-								);
-								if (subjectsMatch) {
-									subjects = decodeURIComponent(subjectsMatch[1])
-										.split(",")
-										.filter(Boolean);
-								}
-
 								await TutorProfile.create({
 									userId: user.id,
 									userName: user.name || "",
 									userEmail: user.email,
 									slug,
-									headline,
-									hourlyRate,
-									subjects,
-									bio: "I am a professional tutor on SkillNest. I will update my bio later.",
-									languages: ["English"],
-									currency: "USD",
-									country: "Pakistan",
-									timezone: "Asia/Karachi",
-									lessonDurations: [60],
 									status: "draft",
 								});
 							}

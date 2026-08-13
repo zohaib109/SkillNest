@@ -12,6 +12,7 @@ Detailed repository knowledge is organized in the `docs/` system:
 - **`docs/project-context.md`**: Product vision, MVP scope, current state, user roles, roadmap.
 - **`docs/architecture.md`**: Technical stack, folder structure, routing, auth flow, database models.
 - **`docs/decisions.md`**: Architectural & business decisions log and development constraints.
+- **`docs/roadmap.md`**: Authoritative milestone order, current focus, and acceptance criteria.
 
 ---
 
@@ -26,6 +27,8 @@ Detailed repository knowledge is organized in the `docs/` system:
 | **Lint & check** | `pnpm lint` (Biome check) |
 | **Lint & fix** | `pnpm lint:fix` (Biome auto-fix) |
 | **Format code** | `pnpm format` (Biome format write) |
+| **Type check** | `pnpm typecheck` |
+| **Unit tests** | `pnpm test` (Vitest run) |
 
 ---
 
@@ -63,3 +66,5 @@ Detailed repository knowledge is organized in the `docs/` system:
    - Run `pnpm lint` after making changes to verify Biome checks pass cleanly.
 8. **Dev Server Performance**:
    - `pnpm dev` is configured with `next dev --webpack` to prevent Turbopack Rust memory crashes (`memory allocation failed`) on low-RAM Windows development environments. Do not remove `--webpack` from `package.json`.
+9. **Documentation Continuity**:
+   - Update the relevant `docs/` files in the same change whenever product scope, architecture, models, operational policies, or milestone status changes.

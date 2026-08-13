@@ -92,3 +92,42 @@ This document records the architectural, technical, and product decisions made f
 ### 12. Trusted OAuth Account Linking in Better Auth
 - **Decision**: Enable `account.accountLinking: { enabled: true, trustedProviders: ["google"] }` in `lib/auth.ts`.
 - **Rationale**: Allows users who previously registered via email/password to seamlessly sign in with Google OAuth using the same verified email address without triggering `account_not_linked` errors or duplicating accounts.
+
+### 13. Server-Owned Admin Role
+- **Decision**: Public signup may create only `student` or `tutor` accounts. The Better Auth `role` field uses `input: false`, and the server resolves the allowed self-service role from a constrained registration cookie.
+- **Rationale**: Prevents a caller from submitting `role: "admin"` directly to the auth endpoint.
+- **Constraint**: Admins must be provisioned through a controlled operational procedure; never expose admin selection in public registration.
+
+### 14. Canonical Tutor Review State
+- **Decision**: Tutor status values are `draft | pending_review | approved | rejected` everywhere.
+- **Rationale**: A previous `pending` versus `pending_review` mismatch broke TypeScript checks and hid submitted tutors from the admin review queue.
+- **Constraint**: Approval and rejection are valid only from `pending_review`, and discovery requires both `status: "approved"` and `isApproved: true`.
+
+### 15. Moderated Profile Edits
+- **Decision**: Saving changes to an approved or pending-review tutor profile returns the profile to `draft` and clears approval metadata.
+- **Rationale**: Prevents unreviewed public content from remaining bookable under an earlier approval.
+- **Future Option**: Add separate draft and published profile versions so an approved version can remain live during re-review.
+
+### 16. First Launch Includes Messaging and Agora
+- **Decision**: Booking-linked messaging and Agora browser lessons are required before the first public launch.
+- **Rationale**: The launch product must support the complete student-tutor lesson lifecycle, not only discovery and checkout.
+
+### 17. Pakistan Business and Flexible Infrastructure
+- **Decision**: SkillNest is registered in Islamabad with a Pakistan-based business bank account. Hosting is not locked to Hostinger.
+- **Rationale**: Payment gateway and deployment choices must work for a Pakistan contracting entity while serving international students.
+- **Constraint**: Do not lock a payment gateway until its Pakistan merchant onboarding, international card acceptance, settlement, webhook, refund, and compliance fit have been verified.
+
+### 18. Temporary Marketplace Policies
+- **Decision**: Commission, cancellation, no-show, refund, and payout settings are mock values centralized in `lib/policies.ts`.
+- **Current Mock Values**:
+  - Platform commission: 15% (`1500` basis points).
+  - Full-refund cancellation window: at least 24 hours before the lesson.
+  - Partial refund: 50% from 6 to 24 hours before the lesson.
+  - Late student cancellation/no-show: 0% refund by default, subject to admin review.
+  - Tutor no-show: 100% refund.
+  - Tutor payouts: weekly, USD 25 mock minimum, up to five business days processing.
+- **Constraint**: UI and transaction records must label these values as policy snapshots/configuration rather than hard-coding them across features.
+
+### 19. Test Data and Deferred Document Verification
+- **Decision**: All current database records are disposable test data because the application has never been deployed. Tutor identity documents, degrees, certificates, and background checks are deferred.
+- **Rationale**: Development may safely reset or migrate existing records, while initial moderation focuses on profile quality.

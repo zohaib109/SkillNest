@@ -62,14 +62,23 @@ export async function saveTutorProfile(
 	profile.userName = session.user.name ?? profile.userName;
 	profile.userEmail = session.user.email ?? profile.userEmail;
 
-	// Editing a previously rejected profile returns it to draft for resubmission.
-	if (profile.status === "rejected") {
+	// Any public-profile edit requires a fresh moderation pass. Versioned edits
+	// can replace this temporary de-listing behavior later.
+	if (
+		profile.status === "rejected" ||
+		profile.status === "pending_review" ||
+		profile.status === "approved"
+	) {
 		profile.status = "draft";
+		profile.isApproved = false;
+		profile.approvedAt = null;
+		profile.approvedBy = "";
 		profile.rejectionReason = "";
 	}
 
 	await profile.save();
 	revalidatePath("/dashboard/profile");
+	revalidatePath("/complete-profile");
 	return { success: true };
 }
 
@@ -108,11 +117,36 @@ export async function submitTutorProfileForReview(): Promise<ActionResult> {
 	if (profile.status === "approved") {
 		return { success: false, error: "Your profile is already approved" };
 	}
+	if (profile.status === "pending_review") {
+		return { success: false, error: "Your profile is already awaiting review" };
+	}
+	if (profile.availabilityRules.length === 0) {
+		return {
+			success: false,
+			error: "Add and save at least one availability slot before submitting",
+		};
+	}
+	const availabilityParsed = availabilitySchema.safeParse({
+		rules: profile.availabilityRules,
+	});
+	if (!availabilityParsed.success) {
+		return {
+			success: false,
+			error:
+				availabilityParsed.error.issues[0]?.message ??
+				"Fix your availability before submitting",
+		};
+	}
 
 	profile.status = "pending_review";
+	profile.isApproved = false;
+	profile.approvedAt = null;
+	profile.approvedBy = "";
 	profile.rejectionReason = "";
 	await profile.save();
 	revalidatePath("/dashboard/profile");
+	revalidatePath("/complete-profile");
+	revalidatePath("/dashboard/admin/tutors");
 	return { success: true };
 }
 
@@ -142,5 +176,7 @@ export async function saveAvailability(
 	profile.set("availabilityRules", parsed.data.rules);
 	await profile.save();
 	revalidatePath("/dashboard/availability");
+	revalidatePath("/dashboard/profile");
+	revalidatePath("/complete-profile");
 	return { success: true };
 }
