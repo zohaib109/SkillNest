@@ -160,11 +160,10 @@ export function SignInForm() {
 						setActiveTab("login");
 						setError("");
 					}}
-					className={`rounded-xl py-2 text-sm font-semibold transition-all cursor-pointer ${
-						activeTab === "login"
+					className={`rounded-xl py-2 text-sm font-semibold transition-all cursor-pointer ${activeTab === "login"
 							? "bg-white text-foreground shadow-xs"
 							: "text-muted-foreground hover:text-foreground"
-					}`}
+						}`}
 				>
 					Log In
 				</button>
@@ -174,11 +173,10 @@ export function SignInForm() {
 						setActiveTab("signup");
 						setError("");
 					}}
-					className={`rounded-xl py-2 text-sm font-semibold transition-all cursor-pointer ${
-						activeTab === "signup"
+					className={`rounded-xl py-2 text-sm font-semibold transition-all cursor-pointer ${activeTab === "signup"
 							? "bg-white text-foreground shadow-xs"
 							: "text-muted-foreground hover:text-foreground"
-					}`}
+						}`}
 				>
 					Sign Up
 				</button>
@@ -213,11 +211,10 @@ export function SignInForm() {
 							<button
 								type="button"
 								onClick={() => setRole("student")}
-								className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-all cursor-pointer ${
-									role === "student"
+								className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-all cursor-pointer ${role === "student"
 										? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
 										: "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
-								}`}
+									}`}
 							>
 								<span className="text-base">📚</span>
 								<span className="font-semibold">Student</span>
@@ -225,11 +222,10 @@ export function SignInForm() {
 							<button
 								type="button"
 								onClick={() => setRole("tutor")}
-								className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-all cursor-pointer ${
-									role === "tutor"
+								className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-all cursor-pointer ${role === "tutor"
 										? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
 										: "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
-								}`}
+									}`}
 							>
 								<span className="text-base">🎓</span>
 								<span className="font-semibold">Tutor</span>
