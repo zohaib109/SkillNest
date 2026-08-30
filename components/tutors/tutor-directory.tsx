@@ -10,20 +10,26 @@ export function TutorDirectory({ profiles }: { profiles: TutorProfileDTO[] }) {
 	const [query, setQuery] = useState("");
 	const [subject, setSubject] = useState("all");
 	const subjects = useMemo(
-		() => Array.from(new Set(profiles.flatMap((profile) => profile.subjects))).sort(),
+		() =>
+			Array.from(
+				new Set(profiles.flatMap((profile) => profile.subjects)),
+			).sort(),
 		[profiles],
 	);
 	const filtered = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase();
 		return profiles.filter((profile) => {
-			const matchesSubject = subject === "all" || profile.subjects.includes(subject);
+			const matchesSubject =
+				subject === "all" || profile.subjects.includes(subject);
 			const searchable = [
 				profile.userName,
 				profile.headline,
 				profile.subjects.join(" "),
 				profile.languages.join(" "),
 			].join(" ");
-			return matchesSubject && searchable.toLowerCase().includes(normalizedQuery);
+			return (
+				matchesSubject && searchable.toLowerCase().includes(normalizedQuery)
+			);
 		});
 	}, [profiles, query, subject]);
 
@@ -36,7 +42,10 @@ export function TutorDirectory({ profiles }: { profiles: TutorProfileDTO[] }) {
 					placeholder="Search tutors, subjects, or languages"
 					aria-label="Search tutors"
 				/>
-				<Select value={subject} onChange={(event) => setSubject(event.target.value)}>
+				<Select
+					value={subject}
+					onChange={(event) => setSubject(event.target.value)}
+				>
 					<option value="all">All subjects</option>
 					{subjects.map((item) => (
 						<option key={item} value={item}>
@@ -68,7 +77,9 @@ export function TutorDirectory({ profiles }: { profiles: TutorProfileDTO[] }) {
 									)}
 								</div>
 								<div className="min-w-0">
-									<h2 className="truncate text-lg text-foreground">{profile.userName}</h2>
+									<h2 className="truncate text-lg text-foreground">
+										{profile.userName}
+									</h2>
 									<p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
 										{profile.headline}
 									</p>

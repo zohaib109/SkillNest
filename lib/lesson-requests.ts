@@ -1,12 +1,6 @@
 import { connectDB } from "@/lib/db";
-import type {
-	LessonRequestDTO,
-	LessonRequestStatus,
-} from "@/lib/types";
-import {
-	LessonRequest,
-	type LessonRequestDoc,
-} from "@/models/LessonRequest";
+import type { LessonRequestDTO, LessonRequestStatus } from "@/lib/types";
+import { LessonRequest, type LessonRequestDoc } from "@/models/LessonRequest";
 
 type LeanLessonRequest = LessonRequestDoc & {
 	_id: unknown;
@@ -30,9 +24,7 @@ function serialize(doc: LeanLessonRequest): LessonRequestDTO {
 		preferredSchedule: doc.preferredSchedule,
 		message: doc.message,
 		status: doc.status as LessonRequestStatus,
-		respondedAt: doc.respondedAt
-			? new Date(doc.respondedAt).toISOString()
-			: "",
+		respondedAt: doc.respondedAt ? new Date(doc.respondedAt).toISOString() : "",
 		createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
 		updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : "",
 	};

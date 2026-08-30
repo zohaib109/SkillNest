@@ -61,5 +61,5 @@ Detailed repository knowledge is organized in the `docs/` system:
    - Unauthenticated users cannot search tutors or view tutor profiles.
 7. **Verification**:
    - Run `pnpm lint` after making changes to verify Biome checks pass cleanly.
-8. **Dev Server Performance**:
-   - `pnpm dev` is configured with `next dev --webpack` to prevent Turbopack Rust memory crashes (`memory allocation failed`) on low-RAM Windows development environments. Do not remove `--webpack` from `package.json`.
+8. **Dev Server**:
+   - `pnpm dev` uses the default Turbopack compiler (webpack was removed for being too slow). Do not add `--webpack` back to `package.json`.

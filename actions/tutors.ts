@@ -121,7 +121,7 @@ export async function submitTutorProfileForReview(): Promise<ActionResult> {
 	await profile.save();
 	revalidatePath("/dashboard");
 	revalidatePath("/dashboard/profile");
-	revalidatePath("/admin");
+	revalidatePath("/dashboard/admin/tutors");
 	return { success: true };
 }
 
@@ -164,7 +164,8 @@ export async function saveTutorIntroVideo(
 		return { success: false, error: "Only tutors can update an intro video" };
 	}
 
-	const parsed = tutorProfileSchema.shape.introVideoUrl.safeParse(introVideoUrl);
+	const parsed =
+		tutorProfileSchema.shape.introVideoUrl.safeParse(introVideoUrl);
 	if (!parsed.success) {
 		return {
 			success: false,

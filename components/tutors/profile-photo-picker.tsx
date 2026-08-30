@@ -24,7 +24,10 @@ async function compressPhoto(file: File) {
 		const image = new Image();
 		image.onload = () => {
 			const longestEdge = 640;
-			const scale = Math.min(1, longestEdge / Math.max(image.width, image.height));
+			const scale = Math.min(
+				1,
+				longestEdge / Math.max(image.width, image.height),
+			);
 			const canvas = document.createElement("canvas");
 			canvas.width = Math.max(1, Math.round(image.width * scale));
 			canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -74,7 +77,9 @@ export function ProfilePhotoPicker({
 		try {
 			onChange(await compressPhoto(file));
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Could not use that image");
+			setError(
+				caught instanceof Error ? caught.message : "Could not use that image",
+			);
 		} finally {
 			event.target.value = "";
 		}
@@ -115,7 +120,9 @@ export function ProfilePhotoPicker({
 				<p className="text-xs leading-relaxed text-muted-foreground">
 					JPG, PNG, or WebP. We resize it for a fast profile page.
 				</p>
-				{error && <p className="text-xs font-medium text-destructive">{error}</p>}
+				{error && (
+					<p className="text-xs font-medium text-destructive">{error}</p>
+				)}
 			</div>
 		</div>
 	);

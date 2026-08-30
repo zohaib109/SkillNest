@@ -93,11 +93,9 @@ export const lessonRequestSchema = z.object({
 		.refine((value) => subjectValues.includes(value), {
 			message: "Choose a valid subject",
 		}),
-	duration: z
-		.number()
-		.refine((value) => durationValues.includes(value), {
-			message: "Choose a valid lesson duration",
-		}),
+	duration: z.number().refine((value) => durationValues.includes(value), {
+		message: "Choose a valid lesson duration",
+	}),
 	preferredSchedule: z
 		.string()
 		.trim()

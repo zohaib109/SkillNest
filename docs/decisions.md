@@ -85,10 +85,21 @@ This document records the architectural, technical, and product decisions made f
 - **Decision**: Initial tutor signup only creates the user account (`role: "tutor"`). Core tutoring profile fields (headline, bio, rate, primary/additional subjects, and weekly teaching availability) are collected in a dedicated post-signup onboarding page (`/complete-profile`).
 - **Rationale**: Keeps account registration simple and fast while ensuring tutors complete a structured onboarding flow before submitting their profile for approval.
 
-### 11. Webpack Compiler for Local Development (`next dev --webpack`)
-- **Decision**: Use `next dev --webpack` for `pnpm dev` in `package.json`.
-- **Rationale**: Next.js 16 defaults to Turbopack, which allocates a large native Rust memory pool that can crash with `memory allocation failed` (exit code `3221226505`) on low-RAM Windows environments. Webpack provides predictable V8 heap management, compiles on-demand reliably, and prevents development server crashes.
+### 11. Default Turbopack Compiler for Local Development (`next dev`)
+- **Decision**: Use the default `next dev` (Turbopack) in `package.json`. *(Supersedes the earlier decision that mandated `next dev --webpack`.)*
+- **Rationale**: Webpack compilation proved too slow for iteration speed. Turbopack's on-demand Rust memory pool is acceptable in practice on the current development machine.
+- **Constraint**: Do not add `--webpack` back to `package.json`.
 
-### 12. Trusted OAuth Account Linking in Better Auth
+### 13. Stripe-Hosted Checkout for Lesson Payments
+- **Decision**: Use Stripe Checkout Sessions (`mode: "payment"`) created server-side with dynamic `price_data`; students are redirected to Stripe's hosted page. Payment state is reconciled exclusively through a signature-verified webhook (`/api/webhooks/stripe`).
+- **Rationale**: Keeps card data entirely off the platform (lowest PCI scope), avoids building custom payment UIs, and webhook-only terminal writes prevent client-tampered payment states.
+- **Constraint**: Never trust booking/payment state from the client; only the webhook handler writes `paid`/`failed`/`refunded`.
+
+### 14. Payments Are Optional at Boot (Dev Fallback)
+- **Decision**: When `STRIPE_SECRET_KEY` is not configured, `createBooking` confirms bookings instantly without payment and logs a warning; unpaid slots are held for 30 minutes (`PAYMENT_HOLD_MS`) with lazy expiry on read.
+- **Rationale**: The app stays fully demoable in dev without Stripe keys, while production behavior (real checkout) activates purely via environment configuration.
+- **Constraint**: Do not remove the lazy expiry sweep — without it, abandoned checkouts would block tutor slots indefinitely when webhooks are unavailable.
+
+### 15. Trusted OAuth Account Linking in Better Auth
 - **Decision**: Enable `account.accountLinking: { enabled: true, trustedProviders: ["google"] }` in `lib/auth.ts`.
 - **Rationale**: Allows users who previously registered via email/password to seamlessly sign in with Google OAuth using the same verified email address without triggering `account_not_linked` errors or duplicating accounts.

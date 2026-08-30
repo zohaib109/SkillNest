@@ -35,7 +35,7 @@ Tutoring-marketplace/
 │   │   ├── sign-in/page.tsx   # Sign-in page (loads SignInForm)
 │   │   └── sign-up/page.tsx   # Sign-up page (redirects to sign-in tab)
 │   ├── complete-profile/      # Tutor onboarding route (`page.tsx`)
-│   ├── admin/                 # Hidden email-allowlisted tutor review queue
+│   ├── admin/                 # Legacy URL — redirects to /dashboard/admin/tutors
 │   ├── subjects/page.tsx      # Standalone Subjects We Teach catalog
 │   ├── how-it-works/page.tsx  # Onboarding process guide
 │   ├── about/page.tsx         # Platform mission, vision & values
@@ -43,12 +43,18 @@ Tutoring-marketplace/
 │   ├── tutors/                # Tutor discovery routes (protected)
 │   ├── dashboard/             # Role-based dashboard shell & sub-routes
 │   └── api/
-│       └── auth/[...all]/     # Better Auth catch-all endpoint handler
+│       ├── auth/[...all]/     # Better Auth catch-all handler (rate-limited)
+│       └── ...
+├── actions/                   # Server Actions ("use server")
+│   ├── tutors.ts              # Profile save/submit/approve/reject actions
+│   ├── lesson-requests.ts     # Lesson request create/decide actions
+│   └── bookings.ts            # Booking create/cancel/list actions
 ├── components/                # React UI components
 │   ├── layout/                # Navbar, MobileMenu, UserMenu, ThemeToggle
 │   ├── forms/                 # SignInForm
 │   ├── dashboard/             # Sidebar, MobileHeader, EmailVerificationPrompt
 │   ├── tutors/                # TutorProfileForm, AvailabilityEditor, TutorOnboardingForm
+│   ├── bookings/              # SlotPicker (client), BookingCard (client)
 │   └── ui/                    # Base UI primitives (Button, Input, etc.)
 ├── lib/                       # Shared utilities and configurations
 │   ├── auth.ts                # Better Auth server configuration & DB hooks
@@ -58,10 +64,15 @@ Tutoring-marketplace/
 │   ├── env.ts                 # Runtime environment validation (Zod)
 │   ├── slug.ts                # Tutor slug generation helpers
 │   ├── permissions.ts         # Role and approval authorization checks
+│   ├── rate-limit.ts          # In-memory fixed-window rate limiter (auth API)
+│   ├── slots.ts               # Timezone-correct availability slot engine
+│   ├── bookings.ts            # Booking data access + DTO serialization
+│   ├── constants.ts           # Shared domain constants (subjects, languages…)
 │   └── utils.ts               # Classname utility helpers (cn)
 └── models/                    # Mongoose database models
     ├── TutorProfile.ts        # Tutor profile schema & model definition
-    └── LessonRequest.ts       # Lightweight student-to-tutor request model
+    ├── LessonRequest.ts       # Lightweight student-to-tutor request model
+    └── Booking.ts             # Confirmed lesson slot model
 ```
 
 ---
@@ -115,7 +126,26 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 - **`LessonRequest` (`models/LessonRequest.ts`)**:
   - A pre-booking request with denormalized tutor/student identity, subject, duration, preferred schedule, message, and a `pending` / `accepted` / `declined` state.
   - It intentionally contains no payment, booking, calendar, or messaging records.
-- **Planned Models**: `Booking`, `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
+- **`Booking` (`models/Booking.ts`)**:
+  - A lesson slot: denormalized identities, `subject`, `durationMinutes`, canonical UTC `startTime`/`endTime`, and price snapshot (`priceAmount`/`priceCurrency`).
+  - Lifecycle: `status` = `"pending_payment"` | `"confirmed"` | `"completed"` | `"expired"` | `"cancelled_by_student"` | `"cancelled_by_tutor"`. `paymentStatus` = `"unpaid"` | `"paid"` | `"refunded"`.
+  - Indexes on `{ tutorProfileId, startTime }` and `{ studentId, startTime }`; conflict prevention via overlap queries in `actions/bookings.ts`.
+- **`Payment` (`models/Payment.ts`)**:
+  - Ledger record per booking: `stripeSessionId`, `stripePaymentIntentId`, amount/currency, `status` = `"pending"` | `"paid"` | `"failed"` | `"refunded"`.
+  - Terminal states are written exclusively by the Stripe webhook handler.
+
+### Payments & Stripe Integration (`lib/stripe.ts`, `app/api/webhooks/stripe/`)
+- **Checkout**: Stripe-hosted Checkout Sessions (`mode: "payment"`) created server-side in `createBooking`/`payBooking` using dynamic `price_data`; client redirects to `session.url`. Metadata carries `bookingId`.
+- **Webhook reconciliation** (`POST /api/webhooks/stripe`): verifies signatures against the raw body (`STRIPE_WEBHOOK_SECRET`), then applies idempotent state transitions for `checkout.session.completed` (→ paid + confirmed), `checkout.session.expired` / `async_payment_failed` (→ failed + expired), and `charge.refunded` (→ refunded). All handlers no-op when already applied.
+- **Slot holds**: unpaid (`pending_payment`) bookings reserve their slot for 30 minutes (`PAYMENT_HOLD_MS`). Expiry is enforced lazily on read (`expireStalePendingBookings`) plus via webhooks — no cron required.
+- **Dev/demo fallback**: when `STRIPE_SECRET_KEY` is absent, bookings confirm instantly without payment (logged warning) so the app remains fully demoable.
+- **Planned Models**: `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
+
+### Slot Generation (`lib/slots.ts`)
+- Converts weekly `availabilityRules` (tutor-local wall times) into concrete UTC slot instants for the next 14 days.
+- Wall-time → UTC conversion uses `Intl.DateTimeFormat` offset probing with a two-pass adjustment (DST-safe). No external timezone library.
+- Slots are aligned to a 30-minute grid inside each window; a minimum 1-hour booking lead time applies; existing confirmed bookings are excluded as busy intervals.
+- The chosen slot is always re-validated server-side inside the `createBooking` action (client state is never trusted).
 
 ---
 

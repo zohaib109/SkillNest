@@ -36,11 +36,15 @@ export function IntroVideoForm({ initialUrl }: { initialUrl: string }) {
 			className="flex max-w-2xl flex-col gap-5 rounded-3xl border border-border bg-card p-5 shadow-2xs sm:p-6"
 		>
 			<div>
-				<label htmlFor="intro-video-url" className="text-sm font-semibold text-foreground">
+				<label
+					htmlFor="intro-video-url"
+					className="text-sm font-semibold text-foreground"
+				>
 					Video link
 				</label>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Use a public YouTube or Vimeo link. Leave it empty to remove your video.
+					Use a public YouTube or Vimeo link. Leave it empty to remove your
+					video.
 				</p>
 			</div>
 			<Input

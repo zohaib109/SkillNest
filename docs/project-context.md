@@ -64,10 +64,12 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 - **Role-Aware Dashboards (`app/dashboard/`)**: Layout shell supporting `student`, `tutor`, and `admin` views, desktop sidebar (`sidebar.tsx`), mobile drawer header (`mobile-header.tsx`), and email verification banner (`verification-prompt.tsx`).
 
 ### Tutor Marketplace Workflow
-- **Private review queue (`/admin`)**: Unlinked operations page protected by the `zohaibammar33@gmail.com` allowlist. It presents only `pending_review` tutor applications with their photo, profile details, availability, and intro-video link. Approval and rejection are enforced again in server actions.
+- **Admin moderation (`/dashboard/admin/tutors`)**: Review queue inside the dashboard shell, gated by admin role with an email allowlist backdoor (`requireAdmin`). Presents only `pending_review` tutor applications with their photo, profile details, availability, and intro-video link. Approval and rejection are enforced again in server actions. The old `/admin` URL redirects here.
 - **Tutor workspace**: Tutors have status-aware overview, profile/photo editor, availability, intro video, earnings/activity, and lesson-request pages.
 - **Discovery and profiles**: Signed-in users can browse only approved profiles at `/tutors` and view `/tutors/[slug]`. Profiles include an expandable bio, availability summary, teaching rate, subjects, and an embedded YouTube/Vimeo introduction when available.
-- **Lesson requests**: Students can submit one lightweight request per tutor while one is pending. Tutors accept or decline from their dashboard. The request model intentionally excludes messaging, payment, booking, and classroom state until those workflows are introduced.
+- **Lesson requests**: Students can submit one lightweight request per tutor while one is pending. Tutors accept or decline from their dashboard. The request model intentionally excludes messaging, payment, and classroom state until those workflows are introduced.
+- **Booking & Scheduling**: Students book real slots directly from a tutor's profile. A timezone-correct slot engine (`lib/slots.ts`) expands the tutor's weekly availability into concrete UTC instants (30-minute grid, 1-hour minimum lead time, 14-day horizon), excluding already-booked intervals. The client slot picker renders times in the viewer's local timezone; the server re-validates every chosen slot before persisting. Both parties can cancel upcoming lessons; students see "My lessons", tutors see "My schedule" in their dashboards.
+- **Payments (Stripe Checkout)**: Booking a slot creates a pending booking that holds the slot for 30 minutes and redirects the student to Stripe-hosted checkout. A signature-verified webhook (`/api/webhooks/stripe`) is the single source of truth: `checkout.session.completed` confirms the lesson, expired/failed sessions release the slot, refunds are reflected on both payment and booking records. Unpaid bookings can be paid later from My Bookings. Without Stripe keys configured, bookings confirm instantly (dev/demo mode).
 
 ---
 
@@ -88,8 +90,8 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 3. **Public Marketing Experience** — Landing page, Subjects catalog, How It Works, About, Become a Tutor. *(Completed)*
 4. **Tutor Onboarding & Admin Moderation** — Profile form, availability editor, private approval queue. *(Completed)*
 5. **Discovery Marketplace** — Authenticated tutor directory, public profile pages, and lesson requests. *(Completed)*
-6. **Booking & Scheduling** — Slot selection UI, timezone conversion, fixed lesson duration enforcement.
-7. **Stripe Payments Integration** — Card checkout, payment ledger records, webhook reconciliation, refund request tracking.
+6. **Booking & Scheduling** — Slot selection UI, timezone conversion, fixed lesson duration enforcement. *(Completed)*
+7. **Stripe Payments Integration** — Card checkout via Stripe-hosted Checkout, payment ledger records, webhook reconciliation. *(Core completed; refunds UI & admin payout management remain)*
 8. **Operations & Dashboards** — Tutor earnings view, student bookings dashboard, admin payout management.
 9. **Local Pakistani Payments** — PayFast / bSecure wallet integration.
 10. **In-App Messaging** — Booking-linked discussion threads.

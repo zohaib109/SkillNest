@@ -1,11 +1,13 @@
 import { TutorRequestList } from "@/components/dashboard/tutor-request-list";
-import { requireRole } from "@/lib/permissions";
 import { getLessonRequestsForTutor } from "@/lib/lesson-requests";
+import { requireRole } from "@/lib/permissions";
 
 export default async function TutorRequestsPage() {
 	const session = await requireRole("tutor");
 	const requests = await getLessonRequestsForTutor(session.user.id);
-	const pendingCount = requests.filter((request) => request.status === "pending").length;
+	const pendingCount = requests.filter(
+		(request) => request.status === "pending",
+	).length;
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -14,9 +16,12 @@ export default async function TutorRequestsPage() {
 					<p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
 						Teaching workspace
 					</p>
-					<h1 className="mt-1 text-3xl tracking-tight text-foreground">Lesson requests</h1>
+					<h1 className="mt-1 text-3xl tracking-tight text-foreground">
+						Lesson requests
+					</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Review a student's learning goal, then accept or decline the request.
+						Review a student's learning goal, then accept or decline the
+						request.
 					</p>
 				</div>
 				{pendingCount > 0 && (

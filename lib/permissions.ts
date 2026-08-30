@@ -34,10 +34,15 @@ export async function requireRole(role: Role) {
 	return session;
 }
 
-/** The private moderation area is intentionally email allowlist based, not role based. */
+/**
+ * The private moderation area is accessible to accounts with the admin role,
+ * plus an email allowlist as an independent emergency backdoor. Navigation
+ * (sidebar) gates by role, so this check must accept roles too — otherwise
+ * admins get bounced between the dashboard and this page.
+ */
 export async function requireAdmin() {
 	const session = await requireUser();
-	if (!isAdminEmail(session.user.email)) {
+	if (session.user.role !== "admin" && !isAdminEmail(session.user.email)) {
 		redirect("/dashboard");
 	}
 	return session;
@@ -67,6 +72,16 @@ export function isTutorRejected(
 	profile: { status?: string } | null | undefined,
 ): boolean {
 	return profile?.status === "rejected";
+}
+
+/**
+ * Non-redirecting admin check for Server Actions: accepts the admin role or
+ * the email allowlist, mirroring requireAdmin().
+ */
+export function isAdminSession(session: {
+	user: { role?: string | null; email?: string | null };
+}): boolean {
+	return session.user.role === "admin" || isAdminEmail(session.user.email);
 }
 
 /** Require the current user to be an approved tutor, else bounce to /dashboard. */

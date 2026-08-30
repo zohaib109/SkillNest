@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-server";
 import { connectDB } from "@/lib/db";
 import { isTutorApproved } from "@/lib/permissions";
+import type { LessonRequestInput, LessonRequestStatus } from "@/lib/types";
 import {
 	lessonRequestDecisionSchema,
 	lessonRequestSchema,
 } from "@/lib/validators/tutor";
 import { LessonRequest } from "@/models/LessonRequest";
 import { TutorProfile } from "@/models/TutorProfile";
-import type { LessonRequestInput, LessonRequestStatus } from "@/lib/types";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -18,7 +18,8 @@ export async function createLessonRequest(
 	input: LessonRequestInput,
 ): Promise<ActionResult> {
 	const session = await getSession();
-	if (!session) return { success: false, error: "Please sign in to send a request" };
+	if (!session)
+		return { success: false, error: "Please sign in to send a request" };
 	if (session.user.role !== "student") {
 		return { success: false, error: "Only student accounts can send requests" };
 	}
@@ -37,14 +38,20 @@ export async function createLessonRequest(
 		status: "approved",
 		isApproved: true,
 	});
-	if (!isTutorApproved(tutor)) {
-		return { success: false, error: "This tutor is not available for requests" };
+	if (!tutor || !isTutorApproved(tutor)) {
+		return {
+			success: false,
+			error: "This tutor is not available for requests",
+		};
 	}
 	if (!tutor.subjects.includes(parsed.data.subject)) {
 		return { success: false, error: "Choose a subject offered by this tutor" };
 	}
 	if (!tutor.lessonDurations.includes(parsed.data.duration)) {
-		return { success: false, error: "Choose one of the tutor's lesson durations" };
+		return {
+			success: false,
+			error: "Choose one of the tutor's lesson durations",
+		};
 	}
 
 	const existing = await LessonRequest.exists({
@@ -67,7 +74,10 @@ export async function createLessonRequest(
 		studentId: session.user.id,
 		studentName: session.user.name ?? "",
 		studentEmail: session.user.email ?? "",
-		...parsed.data,
+		subject: parsed.data.subject,
+		duration: parsed.data.duration,
+		preferredSchedule: parsed.data.preferredSchedule,
+		message: parsed.data.message,
 	});
 
 	revalidatePath(`/tutors/${tutor.slug}`);

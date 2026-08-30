@@ -17,8 +17,8 @@ export default async function TutorsPage() {
 						Find a tutor
 					</h1>
 					<p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-						Explore approved tutors, compare their teaching focus, and send a lesson
-						request when one feels right for your goal.
+						Explore approved tutors, compare their teaching focus, and send a
+						lesson request when one feels right for your goal.
 					</p>
 				</header>
 				<TutorDirectory profiles={profiles} />

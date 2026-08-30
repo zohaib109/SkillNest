@@ -128,7 +128,7 @@ export function TutorModerationList({
 												`${DAYS_OF_WEEK[rule.dayOfWeek].slice(0, 3)} ${rule.startTime}–${rule.endTime}`,
 										)
 										.join(", ") +
-										(profile.availabilityRules.length > 3 ? " + more" : "")
+									(profile.availabilityRules.length > 3 ? " + more" : "")
 								: "Not set"}
 						</span>
 						<span>

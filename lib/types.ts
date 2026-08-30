@@ -87,3 +87,68 @@ export interface LessonRequestInput {
 	preferredSchedule: string;
 	message: string;
 }
+
+export type BookingStatus =
+	| "pending_payment"
+	| "confirmed"
+	| "completed"
+	| "expired"
+	| "cancelled_by_student"
+	| "cancelled_by_tutor";
+
+export type BookingPaymentStatus = "unpaid" | "paid" | "refunded";
+
+/** Plain, serializable booking shape passed to Client Components. */
+export interface BookingDTO {
+	id: string;
+	tutorId: string;
+	tutorProfileId: string;
+	tutorName: string;
+	tutorSlug: string;
+	studentId: string;
+	studentName: string;
+	studentEmail: string;
+	subject: string;
+	durationMinutes: number;
+	/** Canonical UTC instants (ISO strings); UI renders in local timezone. */
+	startTime: string;
+	endTime: string;
+	status: BookingStatus;
+	paymentStatus: BookingPaymentStatus;
+	priceAmount: number;
+	priceCurrency: string;
+	cancelledAt: string;
+	cancellationReason: string;
+	createdAt: string;
+}
+
+/**
+ * Slot availability payload handed to the client slot picker.
+ * Keys are lesson durations in minutes; values are ISO UTC start instants
+ * of bookable slots (already filtered for lead time and existing bookings).
+ */
+export interface TutorSlotAvailability {
+	durations: number[];
+	slotsByDuration: Record<number, string[]>;
+}
+
+export type RefundStatus = "pending" | "approved" | "rejected";
+
+/** Plain, serializable refund request shape for Client Components. */
+export interface RefundRequestDTO {
+	id: string;
+	bookingId: string;
+	studentId: string;
+	tutorName: string;
+	subject: string;
+	/** Canonical UTC instant (ISO string) of the lesson start. */
+	lessonStart: string;
+	amount: number;
+	currency: string;
+	reason: string;
+	status: RefundStatus;
+	adminNote: string;
+	processedBy: string;
+	processedAt: string;
+	createdAt: string;
+}

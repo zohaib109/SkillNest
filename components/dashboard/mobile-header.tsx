@@ -19,11 +19,12 @@ const navItems: Record<Role, { href: string; label: string }[]> = {
 		{ href: "/dashboard/availability", label: "Availability" },
 		{ href: "/dashboard/intro-video", label: "Intro Video" },
 		{ href: "/dashboard/requests", label: "Lesson Requests" },
+		{ href: "/dashboard/bookings", label: "My Schedule" },
 		{ href: "/dashboard/earnings", label: "Earnings & Activity" },
 	],
 	admin: [
 		{ href: "/dashboard", label: "Overview" },
-		{ href: "/admin", label: "Tutor Review" },
+		{ href: "/dashboard/admin/tutors", label: "Tutor Review" },
 		{ href: "/dashboard/admin/bookings", label: "Bookings" },
 		{ href: "/dashboard/admin/payouts", label: "Payouts" },
 	],

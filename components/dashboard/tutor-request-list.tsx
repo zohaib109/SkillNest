@@ -13,7 +13,11 @@ const statusStyles = {
 	declined: "bg-destructive/10 text-destructive",
 };
 
-export function TutorRequestList({ requests }: { requests: LessonRequestDTO[] }) {
+export function TutorRequestList({
+	requests,
+}: {
+	requests: LessonRequestDTO[];
+}) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState("");
@@ -54,7 +58,9 @@ export function TutorRequestList({ requests }: { requests: LessonRequestDTO[] })
 							<h2 className="text-base font-semibold text-foreground">
 								{request.studentName || "Student"}
 							</h2>
-							<p className="mt-0.5 text-sm text-muted-foreground">{request.studentEmail}</p>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								{request.studentEmail}
+							</p>
 						</div>
 						<span
 							className={cn(
@@ -67,13 +73,16 @@ export function TutorRequestList({ requests }: { requests: LessonRequestDTO[] })
 					</div>
 					<div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
 						<p>
-							<span className="font-semibold text-foreground">Subject:</span> {request.subject}
+							<span className="font-semibold text-foreground">Subject:</span>{" "}
+							{request.subject}
 						</p>
 						<p>
-							<span className="font-semibold text-foreground">Length:</span> {request.duration} min
+							<span className="font-semibold text-foreground">Length:</span>{" "}
+							{request.duration} min
 						</p>
 						<p>
-							<span className="font-semibold text-foreground">Preferred:</span> {request.preferredSchedule}
+							<span className="font-semibold text-foreground">Preferred:</span>{" "}
+							{request.preferredSchedule}
 						</p>
 					</div>
 					<p className="rounded-2xl bg-muted/60 px-3 py-3 text-sm leading-relaxed text-foreground">

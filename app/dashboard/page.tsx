@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { getLessonRequestsForStudent, getTutorRequestSummary } from "@/lib/lesson-requests";
+import {
+	getLessonRequestsForStudent,
+	getTutorRequestSummary,
+} from "@/lib/lesson-requests";
 import { requireUser } from "@/lib/permissions";
 import { getTutorProfileByUserId } from "@/lib/tutors";
 import type { TutorStatus } from "@/lib/types";
@@ -11,7 +14,8 @@ const profileStatus: Record<
 	draft: {
 		label: "Profile setup needed",
 		tone: "bg-muted text-muted-foreground",
-		description: "Finish your profile and submit it for review before students can find you.",
+		description:
+			"Finish your profile and submit it for review before students can find you.",
 	},
 	pending_review: {
 		label: "Under review",
@@ -21,7 +25,8 @@ const profileStatus: Record<
 	approved: {
 		label: "Profile live",
 		tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-		description: "Students can now discover your profile and send lesson requests.",
+		description:
+			"Students can now discover your profile and send lesson requests.",
 	},
 	rejected: {
 		label: "Changes requested",
@@ -52,14 +57,17 @@ export default async function DashboardPage() {
 						Welcome back{session.user.name ? `, ${session.user.name}` : ""}
 					</h1>
 					<p className="text-sm text-muted-foreground">
-						Keep your teaching profile current and stay on top of new lesson requests.
+						Keep your teaching profile current and stay on top of new lesson
+						requests.
 					</p>
 				</header>
 
 				<section className="rounded-3xl border border-border bg-card p-5 shadow-2xs sm:p-6">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 						<div>
-							<p className="text-sm font-semibold text-foreground">Tutor profile status</p>
+							<p className="text-sm font-semibold text-foreground">
+								Tutor profile status
+							</p>
 							<p className="mt-1 text-sm leading-relaxed text-muted-foreground">
 								{statusInfo.description}
 							</p>
@@ -69,16 +77,24 @@ export default async function DashboardPage() {
 								</p>
 							)}
 						</div>
-						<span className={`w-fit rounded-full px-3 py-1 text-sm font-semibold ${statusInfo.tone}`}>
+						<span
+							className={`w-fit rounded-full px-3 py-1 text-sm font-semibold ${statusInfo.tone}`}
+						>
 							{statusInfo.label}
 						</span>
 					</div>
 					<div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-						<Link href="/dashboard/profile" className="font-semibold text-primary hover:underline">
+						<Link
+							href="/dashboard/profile"
+							className="font-semibold text-primary hover:underline"
+						>
 							Edit profile
 						</Link>
 						{status === "approved" && profile && (
-							<Link href={`/tutors/${profile.slug}`} className="font-semibold text-primary hover:underline">
+							<Link
+								href={`/tutors/${profile.slug}`}
+								className="font-semibold text-primary hover:underline"
+							>
 								View public profile
 							</Link>
 						)}
@@ -86,14 +102,30 @@ export default async function DashboardPage() {
 				</section>
 
 				<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-					<Metric label="Awaiting decision" value={String(summary.pending)} detail="Lesson requests" />
-					<Metric label="Accepted requests" value={String(summary.accepted)} detail="All time" />
+					<Metric
+						label="Awaiting decision"
+						value={String(summary.pending)}
+						detail="Lesson requests"
+					/>
+					<Metric
+						label="Accepted requests"
+						value={String(summary.accepted)}
+						detail="All time"
+					/>
 					<Metric
 						label="Acceptance rate"
-						value={summary.acceptanceRate === null ? "—" : `${summary.acceptanceRate}%`}
+						value={
+							summary.acceptanceRate === null
+								? "—"
+								: `${summary.acceptanceRate}%`
+						}
 						detail="Answered requests"
 					/>
-					<Metric label="Estimated earnings" value="$0" detail="Payments coming later" />
+					<Metric
+						label="Estimated earnings"
+						value="$0"
+						detail="Payments coming later"
+					/>
 				</section>
 
 				<section className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -128,8 +160,12 @@ export default async function DashboardPage() {
 
 	if (role === "student") {
 		const requests = await getLessonRequestsForStudent(session.user.id);
-		const awaiting = requests.filter((request) => request.status === "pending").length;
-		const accepted = requests.filter((request) => request.status === "accepted").length;
+		const awaiting = requests.filter(
+			(request) => request.status === "pending",
+		).length;
+		const accepted = requests.filter(
+			(request) => request.status === "accepted",
+		).length;
 
 		return (
 			<div className="flex flex-col gap-6">
@@ -141,14 +177,27 @@ export default async function DashboardPage() {
 						Welcome back{session.user.name ? `, ${session.user.name}` : ""}
 					</h1>
 					<p className="text-sm text-muted-foreground">
-						Find a tutor, send a focused lesson request, and follow each response here.
+						Find a tutor, send a focused lesson request, and follow each
+						response here.
 					</p>
 				</header>
 
 				<section className="grid gap-3 sm:grid-cols-3">
-					<Metric label="Requests sent" value={String(requests.length)} detail="All time" />
-					<Metric label="Awaiting response" value={String(awaiting)} detail="Tutor review" />
-					<Metric label="Accepted" value={String(accepted)} detail="Ready for next steps" />
+					<Metric
+						label="Requests sent"
+						value={String(requests.length)}
+						detail="All time"
+					/>
+					<Metric
+						label="Awaiting response"
+						value={String(awaiting)}
+						detail="Tutor review"
+					/>
+					<Metric
+						label="Accepted"
+						value={String(accepted)}
+						detail="Ready for next steps"
+					/>
 				</section>
 
 				<section className="grid gap-3 lg:grid-cols-2">
@@ -173,16 +222,27 @@ export default async function DashboardPage() {
 		<div className="rounded-3xl border border-border bg-card p-6">
 			<h1 className="text-2xl text-foreground">Operations workspace</h1>
 			<p className="mt-2 text-sm text-muted-foreground">
-				The private review queue is available only to the configured operations allowlist.
+				The private review queue is available only to the configured operations
+				allowlist.
 			</p>
 		</div>
 	);
 }
 
-function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
+function Metric({
+	label,
+	value,
+	detail,
+}: {
+	label: string;
+	value: string;
+	detail: string;
+}) {
 	return (
 		<div className="rounded-3xl border border-border bg-card p-4 shadow-2xs">
-			<p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+			<p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+				{label}
+			</p>
 			<p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
 			<p className="mt-1 text-xs text-muted-foreground">{detail}</p>
 		</div>
@@ -203,8 +263,13 @@ function WorkspaceCard({
 	return (
 		<div className="flex min-h-40 flex-col rounded-3xl border border-border bg-card p-5 shadow-2xs">
 			<h2 className="text-base font-semibold text-foreground">{title}</h2>
-			<p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
-			<Link href={href} className="mt-auto pt-4 text-sm font-semibold text-primary hover:underline">
+			<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+				{description}
+			</p>
+			<Link
+				href={href}
+				className="mt-auto pt-4 text-sm font-semibold text-primary hover:underline"
+			>
 				{label} →
 			</Link>
 		</div>

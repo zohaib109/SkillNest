@@ -56,9 +56,16 @@ export function LessonRequestForm({
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 			<div className="grid gap-3 sm:grid-cols-2">
-				<label className="flex flex-col gap-1.5 text-sm font-semibold text-foreground">
+				<label
+					htmlFor="lr-subject"
+					className="flex flex-col gap-1.5 text-sm font-semibold text-foreground"
+				>
 					Subject
-					<Select value={subject} onChange={(event) => setSubject(event.target.value)}>
+					<Select
+						id="lr-subject"
+						value={subject}
+						onChange={(event) => setSubject(event.target.value)}
+					>
 						{subjects.map((item) => (
 							<option key={item} value={item}>
 								{item}
@@ -66,9 +73,16 @@ export function LessonRequestForm({
 						))}
 					</Select>
 				</label>
-				<label className="flex flex-col gap-1.5 text-sm font-semibold text-foreground">
+				<label
+					htmlFor="lr-duration"
+					className="flex flex-col gap-1.5 text-sm font-semibold text-foreground"
+				>
 					Lesson length
-					<Select value={duration} onChange={(event) => setDuration(event.target.value)}>
+					<Select
+						id="lr-duration"
+						value={duration}
+						onChange={(event) => setDuration(event.target.value)}
+					>
 						{durations.map((item) => (
 							<option key={item} value={item}>
 								{item} minutes
@@ -77,9 +91,13 @@ export function LessonRequestForm({
 					</Select>
 				</label>
 			</div>
-			<label className="flex flex-col gap-1.5 text-sm font-semibold text-foreground">
+			<label
+				htmlFor="lr-schedule"
+				className="flex flex-col gap-1.5 text-sm font-semibold text-foreground"
+			>
 				When would you like to learn?
 				<Input
+					id="lr-schedule"
 					value={preferredSchedule}
 					onChange={(event) => setPreferredSchedule(event.target.value)}
 					placeholder="e.g. Weekday evenings after 6pm (UTC+5)"
@@ -87,9 +105,13 @@ export function LessonRequestForm({
 					required
 				/>
 			</label>
-			<label className="flex flex-col gap-1.5 text-sm font-semibold text-foreground">
+			<label
+				htmlFor="lr-message"
+				className="flex flex-col gap-1.5 text-sm font-semibold text-foreground"
+			>
 				What would you like help with?
 				<Textarea
+					id="lr-message"
 					value={message}
 					onChange={(event) => setMessage(event.target.value)}
 					placeholder="Briefly share your goal, current level, or the topic you want to cover."

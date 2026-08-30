@@ -33,7 +33,7 @@ const roleLinks: Record<Role, { href: string; label: string }[]> = {
 	],
 	admin: [
 		{ href: "/dashboard", label: "Admin Overview" },
-		{ href: "/admin", label: "Tutor Review" },
+		{ href: "/dashboard/admin/tutors", label: "Tutor Review" },
 		{ href: "/dashboard/admin/bookings", label: "Bookings" },
 		{ href: "/dashboard/admin/payouts", label: "Payouts" },
 	],
