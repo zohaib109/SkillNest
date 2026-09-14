@@ -4,7 +4,7 @@
 
 | Component | Technology | Version | Usage & Responsibility |
 | :--- | :--- | :--- | :--- |
-| **Framework** | Next.js | `16.2.10` | App Router, Server Components, Route Handlers. |
+| **Framework** | Next.js | `16.3.0` | App Router, Server Components, Route Handlers. |
 | **UI Library** | React | `19.2.4` | Core view engine. |
 | **Language** | TypeScript | `5.9.x` | Strict type checking (`tsconfig.json`). |
 | **Styling** | Tailwind CSS | `v4` (`@tailwindcss/postcss`) | CSS-first custom properties and OKLCH color tokens. |
@@ -15,6 +15,7 @@
 | **Lint / Format** | Biome | `2.5+` | Formatting and linting (`pnpm lint`, `pnpm lint:fix`). |
 | **Unit Tests** | Vitest | `4.1.5` | Fast domain, validation, and component-adjacent tests. |
 | **Package Manager** | pnpm | Locked | Dependency and workspace manager. |
+| **Runtime** | Node.js | `>=20.19.0` | Minimum shared requirement for Next.js 16, Mongoose 9, and Vitest 4. |
 
 ---
 
@@ -41,7 +42,7 @@ Tutoring-marketplace/
 │   ├── how-it-works/page.tsx  # Onboarding process guide
 │   ├── about/page.tsx         # Platform mission, vision & values
 │   ├── become-a-tutor/page.tsx# Tutor recruitment marketing page
-│   ├── tutors/                # Tutor discovery routes (protected)
+│   ├── tutors/                # Verified-student discovery and `[slug]` profiles
 │   ├── dashboard/             # Role-based dashboard shell & sub-routes
 │   └── api/
 │       └── auth/[...all]/     # Better Auth catch-all endpoint handler
@@ -49,7 +50,7 @@ Tutoring-marketplace/
 │   ├── layout/                # Navbar, MobileMenu, UserMenu, ThemeToggle
 │   ├── forms/                 # SignInForm
 │   ├── dashboard/             # Sidebar, MobileHeader, EmailVerificationPrompt
-│   ├── tutors/                # TutorProfileForm and AvailabilityEditor
+│   ├── tutors/                # Tutor editing, availability, and save controls
 │   └── ui/                    # Base UI primitives (Button, Input, etc.)
 ├── lib/                       # Shared utilities and configurations
 │   ├── auth.ts                # Better Auth server configuration & DB hooks
@@ -62,10 +63,13 @@ Tutoring-marketplace/
 │   ├── navigation.ts          # Internal callback URL safety
 │   ├── permissions.ts         # Role and approval authorization checks
 │   ├── policies.ts            # Central temporary marketplace policy values
+│   ├── payment-instructions.ts# Server-only temporary collection accounts
 │   ├── registration.ts        # Public registration role constraints
+│   ├── tutor-search.ts         # URL filter parsing for tutor discovery
 │   └── utils.ts               # Classname utility helpers (cn)
 └── models/                    # Mongoose database models
-    └── TutorProfile.ts        # Tutor profile schema & model definition
+    ├── TutorProfile.ts        # Tutor profile schema & discovery indexes
+    └── SavedTutor.ts          # Unique student-to-tutor saves
 ```
 
 ---
@@ -75,7 +79,7 @@ Tutoring-marketplace/
 ### Next.js 16 Proxy Convention
 Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as the official network boundary handler.
 
-- **File**: `proxy.ts`
+- **File**: `proxy.ts`, using the Next.js 16 named `proxy` export.
 - **Protected Routes**: `/dashboard`, `/complete-profile`, `/tutors`.
 - **Session Check**: Verifies `better-auth.session_token` or `__Secure-better-auth.session_token` cookie (note the **underscore**, not hyphen).
 - **Redirect Behavior**:
@@ -101,6 +105,13 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
   - `getSession()`: Reads headers and calls `auth.api.getSession({ headers })`.
   - `requireSession()`: Throws error if `getSession()` is null.
 - **Client Instance (`lib/auth-client.ts`)**: Uses `createAuthClient()` exporting `signIn`, `signUp`, `signOut`, `useSession`.
+  - Uses Better Auth's same-origin default instead of a browser-exposed auth URL; the server's canonical URL remains `BETTER_AUTH_URL`.
+
+### Environment Validation
+
+- `lib/env.ts` validates server-only configuration before auth or database clients are created.
+- `BETTER_AUTH_SECRET` must contain at least 32 characters; missing or invalid production configuration fails fast instead of falling back to Better Auth's development secret.
+- The Better Auth MongoDB adapter receives the shared native `MongoClient`, enabling adapter-managed transactions where supported.
 
 ---
 
@@ -108,6 +119,14 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 
 ### Connection Management
 `lib/db.ts` exports `connectDB()`, which manages a global cached Mongoose connection to prevent hot-reload connection leaks in development.
+Failed connection attempts clear the cached promise so a transient outage does not permanently poison the process.
+
+### Foundation Integration Smoke
+
+`pnpm test:smoke` exercises Better Auth signup and tutor moderation against the
+configured development MongoDB database. Each run uses unique email, user, and
+slug identifiers and removes only those exact records in teardown. The smoke test
+must never be pointed at a production database.
 
 ### Application Models
 - **`TutorProfile` (`models/TutorProfile.ts`)**:
@@ -116,7 +135,17 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
   - Profile info: `headline`, `bio`, `subjects`, `languages`, `hourlyRate`, `currency`, `country`, `timezone`, `introVideoUrl`.
   - Scheduling: `availabilityRules` (array of `{ dayOfWeek, startTime, endTime }`), `lessonDurations` (array of numbers, e.g. `[60]`).
   - Moderation: `status` (`"draft"` | `"pending_review"` | `"approved"` | `"rejected"`), `isApproved` (Boolean, indexed).
+- **`SavedTutor` (`models/SavedTutor.ts`)**:
+  - Stores a student `user.id` and approved `TutorProfile` object id.
+  - A unique compound index prevents duplicate saves for one student and tutor.
 - **Planned Models**: `Booking`, `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
+
+### Discovery Boundary
+
+- `/tutors` and `/tutors/[slug]` require a verified student session.
+- Every list, detail, and save mutation requires both `status: "approved"` and `isApproved: true`.
+- Student-safe tutor DTOs omit email and moderation-only fields.
+- Filters are parsed from constrained URL parameters before reaching MongoDB; keyword regular expressions are escaped and length-limited.
 
 ### Tutor Moderation State Machine
 

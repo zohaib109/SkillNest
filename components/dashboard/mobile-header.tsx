@@ -4,32 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "@/lib/auth-client";
+import { DASHBOARD_NAV_ITEMS } from "@/lib/dashboard-navigation";
+import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type Role = "student" | "tutor" | "admin";
-
-const navItems: Record<Role, { href: string; label: string }[]> = {
-	student: [
-		{ href: "/dashboard", label: "Overview" },
-		{ href: "/dashboard/bookings", label: "My Bookings" },
-	],
-	tutor: [
-		{ href: "/dashboard", label: "Overview" },
-		{ href: "/dashboard/profile", label: "My Profile" },
-		{ href: "/dashboard/availability", label: "Availability" },
-	],
-	admin: [
-		{ href: "/dashboard", label: "Overview" },
-		{ href: "/dashboard/admin/tutors", label: "Manage Tutors" },
-		{ href: "/dashboard/admin/bookings", label: "Bookings" },
-		{ href: "/dashboard/admin/payouts", label: "Payouts" },
-	],
-};
 
 export function DashboardMobileHeader({ role }: { role: Role }) {
 	const pathname = usePathname();
 	const [isOpen, setIsOpen] = useState(false);
-	const links = navItems[role] ?? navItems.student;
+	const links = DASHBOARD_NAV_ITEMS[role];
 
 	// Close drawer when pathname changes
 	useEffect(() => {

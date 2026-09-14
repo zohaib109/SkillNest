@@ -101,7 +101,7 @@ export default async function Home() {
 									))}
 								</div>
 								<span className="text-sm text-muted-foreground font-medium">
-									Trusted by 10,000+ students
+									Built for focused, one-on-one learning
 								</span>
 								{/* Avatars */}
 								<div className="flex -space-x-2">
@@ -160,9 +160,9 @@ export default async function Home() {
 							},
 							{
 								icon: "🛡️",
-								title: "Verified Quality",
+								title: "Reviewed Profiles",
 								description:
-									"All tutors undergo credential vetting and manual admin validation before hosting private lessons.",
+									"Every tutor profile is reviewed by an administrator before it can appear in student discovery.",
 							},
 							{
 								icon: "⏳",
@@ -281,7 +281,7 @@ export default async function Home() {
 				<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 					<div className="flex flex-col items-center gap-6 text-center">
 						<h2 className="text-3xl font-bold tracking-tight font-[var(--font-heading)] text-primary-foreground sm:text-4xl">
-							Ready to start master learning?
+							Ready to start learning?
 						</h2>
 						<p className="max-w-xl text-lg text-primary-foreground/80 leading-relaxed">
 							Join our calm, focused learning community today. Gain the

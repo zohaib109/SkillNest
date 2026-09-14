@@ -14,8 +14,8 @@ export async function getSession() {
 }
 
 /**
- * Require an authenticated session. Redirects to sign-in if not logged in.
- * Use in Server Components that require authentication.
+ * Require an authenticated session and throw if not logged in.
+ * Prefer the redirecting helpers in `lib/permissions.ts` for Server Components.
  */
 export async function requireSession() {
 	const session = await getSession();

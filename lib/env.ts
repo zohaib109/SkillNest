@@ -1,12 +1,16 @@
+import "server-only";
+
 import { z } from "zod/v4";
 
 const envSchema = z.object({
 	MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
-	BETTER_AUTH_SECRET: z.string().min(1, "BETTER_AUTH_SECRET is required"),
-	BETTER_AUTH_URL: z
+	BETTER_AUTH_SECRET: z
 		.string()
-		.url("BETTER_AUTH_URL must be a valid URL")
-		.default("http://localhost:3000"),
+		.min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
+	BETTER_AUTH_URL: z.url({
+		protocol: /^https?$/,
+		message: "BETTER_AUTH_URL must be an HTTP(S) URL",
+	}),
 	GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
 	GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
 });
@@ -15,11 +19,10 @@ function validateEnv() {
 	const parsed = envSchema.safeParse(process.env);
 
 	if (!parsed.success) {
-		console.error(
-			"❌ Invalid environment variables:",
-			parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
-		);
-		throw new Error("Invalid environment variables");
+		const details = parsed.error.issues
+			.map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+			.join("; ");
+		throw new Error(`Invalid environment configuration: ${details}`);
 	}
 
 	return parsed.data;

@@ -59,6 +59,7 @@ export function EmailVerificationPrompt({
 
 				{message && (
 					<div
+						role={status === "error" ? "alert" : "status"}
 						className={`rounded-xl border px-4 py-3 text-xs font-semibold ${
 							status === "success"
 								? "border-emerald-200 bg-emerald-50 text-emerald-700"

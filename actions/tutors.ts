@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-server";
 import { connectDB } from "@/lib/db";
 import { generateUniqueSlug } from "@/lib/slug";
+import { resetTutorModeration } from "@/lib/tutor-moderation";
 import type { AvailabilityRule, TutorProfileInput } from "@/lib/types";
 import { availabilitySchema, tutorProfileSchema } from "@/lib/validators/tutor";
 import { TutorProfile } from "@/models/TutorProfile";
@@ -64,21 +65,13 @@ export async function saveTutorProfile(
 
 	// Any public-profile edit requires a fresh moderation pass. Versioned edits
 	// can replace this temporary de-listing behavior later.
-	if (
-		profile.status === "rejected" ||
-		profile.status === "pending_review" ||
-		profile.status === "approved"
-	) {
-		profile.status = "draft";
-		profile.isApproved = false;
-		profile.approvedAt = null;
-		profile.approvedBy = "";
-		profile.rejectionReason = "";
-	}
+	resetTutorModeration(profile);
 
 	await profile.save();
 	revalidatePath("/dashboard/profile");
 	revalidatePath("/complete-profile");
+	revalidatePath("/dashboard/admin/tutors");
+	revalidatePath("/tutors");
 	return { success: true };
 }
 
@@ -174,9 +167,12 @@ export async function saveAvailability(
 		session.user.email ?? "",
 	);
 	profile.set("availabilityRules", parsed.data.rules);
+	resetTutorModeration(profile);
 	await profile.save();
 	revalidatePath("/dashboard/availability");
 	revalidatePath("/dashboard/profile");
 	revalidatePath("/complete-profile");
+	revalidatePath("/dashboard/admin/tutors");
+	revalidatePath("/tutors");
 	return { success: true };
 }

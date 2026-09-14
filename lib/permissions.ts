@@ -27,6 +27,15 @@ export async function requireRole(role: Role) {
 	return session;
 }
 
+/** Require a verified user with a specific role. */
+export async function requireVerifiedRole(role: Role) {
+	const session = await requireRole(role);
+	if (!session.user.emailVerified) {
+		redirect("/dashboard");
+	}
+	return session;
+}
+
 /** Non-redirecting role check for use inside Server Actions. */
 export function hasRole(role: string | undefined | null, expected: Role) {
 	return role === expected;

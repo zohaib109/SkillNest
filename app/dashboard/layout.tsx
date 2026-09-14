@@ -3,8 +3,7 @@ import { DashboardMobileHeader } from "@/components/dashboard/mobile-header";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { EmailVerificationPrompt } from "@/components/dashboard/verification-prompt";
 import { getSession } from "@/lib/auth-server";
-
-type Role = "student" | "tutor" | "admin";
+import { normalizeRole } from "@/lib/types";
 
 export default async function DashboardLayout({
 	children,
@@ -22,7 +21,7 @@ export default async function DashboardLayout({
 		return <EmailVerificationPrompt email={session.user.email} />;
 	}
 
-	const role = (session.user.role ?? "student") as Role;
+	const role = normalizeRole(session.user.role);
 
 	return (
 		<div className="flex flex-col md:flex-row flex-1 min-h-0">

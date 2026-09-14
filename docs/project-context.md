@@ -22,6 +22,7 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 6. **Timezone Architecture**: Canonical times stored in UTC; displayed in the user's local timezone on the UI.
 7. **Localization**: English only for launch. No i18n routing or translation dictionaries in v1.
 8. **Public Privacy**: Unauthenticated users cannot search tutors, browse tutor catalogs, or view tutor profiles. Public pages provide conversion-focused marketing, curriculum subject listings, and platform information only.
+9. **Temporary Payment Operations**: Supplied PKR, USD, and GBP receiving-account details are available only to admins as a temporary manual-payment reference. They do not confirm bookings and must be replaced by booking-scoped, ledger-backed payment processing.
 
 ## Confirmed Business & Launch Context
 
@@ -38,7 +39,7 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 ## What Has Been Built
 
 ### Core Foundation & Authentication
-- **Scaffold**: Next.js 16 App Router, React 19, Tailwind CSS v4, TypeScript 5.9, Mongoose 9.7.
+- **Scaffold**: Next.js 16.3.0 App Router, React 19.2, Tailwind CSS v4, TypeScript 5.9, Mongoose 9.7.
 - **Authentication**: Better Auth v1.6+ using native MongoDB adapter for `users` and `sessions` collections.
   - Supports Email/Password and Google OAuth sign-in.
   - **Strict Validation (`lib/validators/auth.ts`)**: Sign-up validation enforces full name rules (min 2 chars, letters/spaces/apostrophes/periods), email normalization (trimmed, lowercased), and strict password complexity (min 10 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char).
@@ -51,6 +52,7 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
   - Public registration can create only `student` or `tutor` accounts; `admin` is server-owned and must be provisioned operationally.
   - Email signup validation is enforced inside Better Auth on the server, not only in the client form.
   - Authentication callback URLs are constrained to internal SkillNest paths.
+  - Server auth/database configuration is validated before use, the auth secret requires at least 32 characters, and browser auth calls use Better Auth's same-origin default.
 
 ### Tutor Onboarding Flow
 - **Dedicated Onboarding (`app/complete-profile/page.tsx`, `TutorProfileForm`, and `AvailabilityEditor`)**:
@@ -64,6 +66,7 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
   - Submission requires at least one valid, non-overlapping availability slot.
   - Admin approval and rejection use atomic status-guarded updates.
   - Editing approved or pending-review content returns it to draft and removes approval until a new review succeeds.
+  - The same reset now applies consistently to both public profile fields and availability edits.
 
 ### Design System & Theme Engine
 - **Visual Direction**: Warm editorial minimal aesthetic with custom OKLCH color tokens in `app/globals.css`.
@@ -82,6 +85,17 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 
 ### Dashboard Base
 - **Role-Aware Dashboards (`app/dashboard/`)**: Layout shell supporting `student`, `tutor`, and `admin` views, desktop sidebar (`sidebar.tsx`), mobile drawer header (`mobile-header.tsx`), and email verification banner (`verification-prompt.tsx`).
+
+### Authenticated Tutor Discovery
+- Verified students can search only profiles satisfying both `status: "approved"` and `isApproved: true`.
+- `/tutors` supports URL-backed keyword, subject, language, currency, duration, rate, saved-only, sort, and pagination controls.
+- `/tutors/[slug]` shows the approved profile, subjects, languages, rate, lesson lengths, intro video, rating summary, and weekly availability preview without exposing tutor email addresses.
+- Students can save and unsave approved tutors; a unique database constraint prevents duplicate saves.
+- Draft, rejected, pending-review, and inconsistent one-flag profiles fail closed in both list and detail queries.
+
+### Temporary Payment Operations
+- The admin-only payments and payouts page contains the supplied PKR, USD, and GBP manual receiving-account reference.
+- Manual transfers do not confirm bookings; admins must verify the amount, currency, sender, and booking reference until ledger-backed reconciliation replaces this temporary process.
 
 ---
 

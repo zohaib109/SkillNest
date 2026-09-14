@@ -8,8 +8,8 @@ export default async function AdminBookingsPage() {
 				Booking Oversight
 			</h1>
 			<p className="text-muted-foreground">
-				Monitor all platform bookings and handle support issues. Coming in Phase
-				7.
+				Monitor all platform bookings and handle support issues. This is planned
+				for a later MVP milestone.
 			</p>
 			<div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center">
 				<p className="text-sm text-muted-foreground">

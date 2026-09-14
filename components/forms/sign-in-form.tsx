@@ -47,7 +47,7 @@ export function SignInForm() {
 	function setRegistrationCookies() {
 		// Set cookie with max-age of 1 hour (3600 seconds)
 		// biome-ignore lint/suspicious/noDocumentCookie: cookie configuration is needed for OAuth signup metadata passing
-		document.cookie = `selected_role=${role}; path=/; max-age=3600; SameSite=Lax`;
+		document.cookie = `selected_role=${role}; path=/; max-age=3600; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
 	}
 
 	async function handleEmailAuth(e: React.FormEvent) {
@@ -167,6 +167,7 @@ export function SignInForm() {
 							? "bg-white text-foreground shadow-xs"
 							: "text-muted-foreground hover:text-foreground"
 					}`}
+					aria-pressed={activeTab === "login"}
 				>
 					Log In
 				</button>
@@ -181,6 +182,7 @@ export function SignInForm() {
 							? "bg-white text-foreground shadow-xs"
 							: "text-muted-foreground hover:text-foreground"
 					}`}
+					aria-pressed={activeTab === "signup"}
 				>
 					Sign Up
 				</button>
@@ -199,7 +201,10 @@ export function SignInForm() {
 			</div>
 
 			{error && (
-				<div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-xs text-destructive text-center font-medium">
+				<div
+					role="alert"
+					className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-xs text-destructive text-center font-medium"
+				>
 					{error}
 				</div>
 			)}
@@ -220,6 +225,7 @@ export function SignInForm() {
 										? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
 										: "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
 								}`}
+								aria-pressed={role === "student"}
 							>
 								<span className="text-base">📚</span>
 								<span className="font-semibold">Student</span>
@@ -232,6 +238,7 @@ export function SignInForm() {
 										? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
 										: "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
 								}`}
+								aria-pressed={role === "tutor"}
 							>
 								<span className="text-base">🎓</span>
 								<span className="font-semibold">Tutor</span>

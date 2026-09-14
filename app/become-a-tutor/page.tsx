@@ -133,7 +133,7 @@ export default async function BecomeTutorPage() {
 							{
 								step: "2",
 								title: "Vetting & Approval",
-								desc: "SkillNest admins review your credentials and biography. Once approved, your public tutor profile goes live in search catalogs.",
+								desc: "SkillNest admins review your profile content and biography. Once approved, your public tutor profile goes live in search catalogs.",
 							},
 							{
 								step: "3",

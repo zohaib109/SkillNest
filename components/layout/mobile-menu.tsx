@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/lib/auth-client";
-
-type Role = "student" | "tutor" | "admin";
+import { normalizeRole, type Role } from "@/lib/types";
 
 interface MobileMenuProps {
 	user: {
@@ -32,7 +31,7 @@ const roleLinks: Record<Role, { href: string; label: string }[]> = {
 		{ href: "/dashboard", label: "Admin Overview" },
 		{ href: "/dashboard/admin/tutors", label: "Manage Tutors" },
 		{ href: "/dashboard/admin/bookings", label: "Bookings" },
-		{ href: "/dashboard/admin/payouts", label: "Payouts" },
+		{ href: "/dashboard/admin/payouts", label: "Payments & Payouts" },
 	],
 };
 
@@ -40,8 +39,8 @@ export function MobileMenu({ user }: MobileMenuProps) {
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
 
-	const role = (user?.role ?? "student") as Role;
-	const links = user ? (roleLinks[role] ?? roleLinks.student) : [];
+	const role = normalizeRole(user?.role);
+	const links = user ? roleLinks[role] : [];
 
 	const publicLinks = user
 		? [

@@ -138,8 +138,8 @@ export default async function DashboardPage() {
 						}
 					/>
 					<DashboardCard
-						title="Payouts"
-						description="Process manual tutor payouts."
+						title="Payments & Payouts"
+						description="Manage temporary transfer instructions and manual tutor payouts."
 						action={
 							<Link
 								href="/dashboard/admin/payouts"
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
 									size: "sm",
 								})}
 							>
-								Manage Payouts
+								Open Payment Setup
 							</Link>
 						}
 					/>

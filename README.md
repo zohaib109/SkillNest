@@ -13,12 +13,12 @@ SkillNest is a transactional tutoring marketplace for international students and
 
 ## Local Setup
 
-1. Install the bundled Node.js runtime or a compatible Node.js version.
+1. Install Node.js 20.19 or newer (required by Mongoose 9) and pnpm 11.19.
 2. Copy `.env.example` to `.env.local` and replace every placeholder.
 3. Install dependencies with `pnpm install`.
 4. Run `pnpm dev` and open `http://localhost:3000`.
 
-Use pnpm only. Local development intentionally runs Next.js with Webpack for stability on low-memory Windows environments.
+Use pnpm only. Local development uses the default Next.js compiler.
 
 ## Quality Commands
 
@@ -26,9 +26,17 @@ Use pnpm only. Local development intentionally runs Next.js with Webpack for sta
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm test:smoke
+pnpm audit --prod
 ```
 
-Run `pnpm build` only when a production build is explicitly needed during MVP development.
+`pnpm test:smoke` uses the configured development MongoDB database. It creates
+uniquely named test records and removes only those records when the run finishes.
+Do not point this command at a production database.
+
+`BETTER_AUTH_SECRET` must be a high-entropy value of at least 32 characters. The
+auth client intentionally uses same-origin requests, so no public auth URL
+environment variable is required.
 
 ## Repository Context
 

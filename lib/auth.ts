@@ -3,6 +3,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { MongoClient } from "mongodb";
 import { sendVerificationEmail } from "@/lib/email";
+import { env } from "@/lib/env";
 import {
 	readSelectedRoleCookie,
 	resolveSelfServiceRole,
@@ -13,16 +14,17 @@ const globalForMongo = globalThis as unknown as {
 	mongoClient: MongoClient | undefined;
 };
 
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/skillnest";
-export const client = globalForMongo.mongoClient ?? new MongoClient(uri);
+export const client =
+	globalForMongo.mongoClient ?? new MongoClient(env.MONGODB_URI);
 
 if (process.env.NODE_ENV !== "production") {
 	globalForMongo.mongoClient = client;
 }
 
 export const auth = betterAuth({
-	baseURL: process.env.BETTER_AUTH_URL,
-	database: mongodbAdapter(client.db()),
+	baseURL: env.BETTER_AUTH_URL,
+	secret: env.BETTER_AUTH_SECRET,
+	database: mongodbAdapter(client.db(), { client }),
 	account: {
 		accountLinking: {
 			enabled: true,
@@ -58,8 +60,8 @@ export const auth = betterAuth({
 	},
 	socialProviders: {
 		google: {
-			clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+			clientId: env.GOOGLE_CLIENT_ID,
+			clientSecret: env.GOOGLE_CLIENT_SECRET,
 		},
 	},
 	session: {

@@ -1,10 +1,20 @@
 /**
- * Pure, framework-agnostic domain types.
- * IMPORTANT: keep this module free of runtime imports (no mongoose, no server code)
- * so it is safe to import into client components with `import type`.
+ * Framework-agnostic domain types and small runtime guards.
+ * Keep this module free of server-only dependencies so client components can
+ * safely import its role normalization helpers.
  */
 
-export type Role = "student" | "tutor" | "admin";
+export const ROLES = ["student", "tutor", "admin"] as const;
+
+export type Role = (typeof ROLES)[number];
+
+export function isRole(value: unknown): value is Role {
+	return typeof value === "string" && ROLES.includes(value as Role);
+}
+
+export function normalizeRole(value: unknown): Role {
+	return isRole(value) ? value : "student";
+}
 
 export type TutorStatus = "draft" | "pending_review" | "approved" | "rejected";
 
@@ -43,6 +53,12 @@ export interface TutorProfileDTO {
 	createdAt: string;
 	updatedAt: string;
 }
+
+/** Approved tutor data that is safe to expose to authenticated students. */
+export type PublicTutorProfileDTO = Omit<
+	TutorProfileDTO,
+	"userEmail" | "status" | "isApproved" | "rejectionReason"
+>;
 
 /** Input payload for saving a tutor profile (from the editor form). */
 export interface TutorProfileInput {

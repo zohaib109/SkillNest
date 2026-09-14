@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/lib/auth-client";
+import { normalizeRole, type Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type Role = "student" | "tutor" | "admin";
 
 interface UserMenuProps {
 	user: {
@@ -32,7 +31,7 @@ const roleLinks: Record<Role, { href: string; label: string }[]> = {
 		{ href: "/dashboard", label: "Admin Overview" },
 		{ href: "/dashboard/admin/tutors", label: "Manage Tutors" },
 		{ href: "/dashboard/admin/bookings", label: "All Bookings" },
-		{ href: "/dashboard/admin/payouts", label: "Process Payouts" },
+		{ href: "/dashboard/admin/payouts", label: "Payments & Payouts" },
 	],
 };
 
@@ -41,8 +40,8 @@ export function UserMenu({ user }: UserMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
-	const role = (user.role ?? "student") as Role;
-	const links = roleLinks[role] ?? roleLinks.student;
+	const role = normalizeRole(user.role);
+	const links = roleLinks[role];
 	const firstLetter = user.name?.charAt(0)?.toUpperCase() ?? "U";
 
 	// Close menu when clicking outside

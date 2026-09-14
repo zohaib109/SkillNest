@@ -50,6 +50,19 @@ const tutorProfileSchema = new Schema(
 	{ timestamps: true },
 );
 
+tutorProfileSchema.index(
+	{ status: 1, isApproved: 1, updatedAt: -1 },
+	{ name: "tutor_discovery_recent" },
+);
+tutorProfileSchema.index(
+	{ status: 1, isApproved: 1, subjects: 1 },
+	{ name: "tutor_discovery_subject" },
+);
+tutorProfileSchema.index(
+	{ status: 1, isApproved: 1, languages: 1 },
+	{ name: "tutor_discovery_language" },
+);
+
 export type TutorProfileDoc = InferSchemaType<typeof tutorProfileSchema>;
 
 export const TutorProfile =

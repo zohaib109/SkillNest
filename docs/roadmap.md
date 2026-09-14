@@ -1,6 +1,6 @@
 # SkillNest Development Roadmap
 
-**Last updated:** August 13, 2026  
+**Last updated:** August 15, 2026
 **Current milestone:** Foundation stabilization integration smoke, followed by authenticated tutor discovery
 
 This file is the authoritative implementation order for future development sessions. Read it together with `project-context.md`, `architecture.md`, and `decisions.md` before making changes.
@@ -40,6 +40,9 @@ Scope:
 - Centralize temporary business policies.
 - Add type-check and automated-test commands.
 - Make Biome, TypeScript, and tests pass cleanly.
+- Enforce validated server configuration and apply the current Next.js security patch.
+- Keep moderation invalidation consistent across tutor profile and availability edits.
+- Keep a cleanup-safe `pnpm test:smoke` harness for the live auth and moderation invariants.
 - Replace scaffold documentation with repository-specific instructions.
 
 Exit criteria:
@@ -51,6 +54,8 @@ Exit criteria:
 - `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
 
 ## Milestone 1 — Authenticated Tutor Discovery
+
+**Status:** Implemented in code; MongoDB-backed integration and browser UX smoke remain
 
 Scope:
 

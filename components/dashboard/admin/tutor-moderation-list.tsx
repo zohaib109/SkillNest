@@ -58,7 +58,10 @@ export function TutorModerationList({
 	return (
 		<div className="flex flex-col gap-4">
 			{error && (
-				<div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+				<div
+					role="alert"
+					className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+				>
 					{error}
 				</div>
 			)}

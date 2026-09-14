@@ -85,9 +85,10 @@ This document records the architectural, technical, and product decisions made f
 - **Decision**: Initial tutor signup only creates the user account (`role: "tutor"`). Core tutoring profile fields (headline, bio, rate, primary/additional subjects, and weekly teaching availability) are collected in a dedicated post-signup onboarding page (`/complete-profile`).
 - **Rationale**: Keeps account registration simple and fast while ensuring tutors complete a structured onboarding flow before submitting their profile for approval.
 
-### 11. Webpack Compiler for Local Development (`next dev --webpack`)
-- **Decision**: Use `next dev --webpack` for `pnpm dev` in `package.json`.
-- **Rationale**: Next.js 16 defaults to Turbopack, which allocates a large native Rust memory pool that can crash with `memory allocation failed` (exit code `3221226505`) on low-RAM Windows environments. Webpack provides predictable V8 heap management, compiles on-demand reliably, and prevents development server crashes.
+### 11. Default Next.js Development Compiler
+- **Decision**: Use `next dev` without forcing a compiler in `package.json`.
+- **Rationale**: The default compiler provides substantially faster local feedback for this project.
+- **Constraint**: Do not add `--webpack` to any application run script. Treat compiler-specific failures as targeted troubleshooting rather than a permanent project-wide fallback.
 
 ### 12. Trusted OAuth Account Linking in Better Auth
 - **Decision**: Enable `account.accountLinking: { enabled: true, trustedProviders: ["google"] }` in `lib/auth.ts`.
@@ -131,3 +132,16 @@ This document records the architectural, technical, and product decisions made f
 ### 19. Test Data and Deferred Document Verification
 - **Decision**: All current database records are disposable test data because the application has never been deployed. Tutor identity documents, degrees, certificates, and background checks are deferred.
 - **Rationale**: Development may safely reset or migrate existing records, while initial moderation focuses on profile quality.
+
+### 20. Conservative Modernization Baseline (August 15, 2026)
+- **Decision**: Keep the existing App Router, Better Auth, MongoDB/Mongoose, Tailwind, and server-action architecture; modernize in place rather than rewrite it.
+- **Security Update**: Pin Next.js `16.3.0`, which includes the July 2026 framework fixes and adopts patched PostCSS and Sharp dependency ranges without unsupported package overrides.
+- **Runtime Floor**: Require Node.js `20.19.0` or newer, matching the strictest current runtime requirement in the stack (Mongoose 9).
+- **Auth Configuration**: Validate server-only environment variables, require a 32-character minimum Better Auth secret, keep `BETTER_AUTH_URL` server-side, and use Better Auth's same-origin browser client default.
+- **Moderation Invariant**: Any tutor-owned edit to moderated profile content, including weekly availability, returns the profile to `draft` and clears approval metadata.
+- **Package Management**: pnpm remains the only package manager; the accidentally committed Bun lockfile was removed.
+
+### 21. Temporary Manual Collection Accounts
+- **Decision**: Store the supplied PKR, USD, and GBP receiving-account instructions in one server-only module and expose them only on the role-protected admin payments page.
+- **Rationale**: Admins need a temporary operational reference before the booking-linked gateway and ledger are complete, without publishing financial details to logged-out visitors or every account holder.
+- **Constraint**: A transfer must never confirm a booking automatically. An admin must verify the amount, currency, sender, and booking reference. Replace this temporary setup with booking-scoped instructions and ledger-backed reconciliation during Milestone 3.

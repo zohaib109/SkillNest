@@ -4,7 +4,7 @@ export default function StudentBookingsPage() {
 			<h1 className="text-3xl tracking-tight text-foreground">My Bookings</h1>
 			<p className="text-muted-foreground">
 				Your upcoming and past lessons will appear here. Booking functionality
-				is coming in Phase 5.
+				is planned for the booking milestone.
 			</p>
 			<div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center">
 				<p className="text-sm text-muted-foreground">

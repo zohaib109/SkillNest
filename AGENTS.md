@@ -22,7 +22,7 @@ Detailed repository knowledge is organized in the `docs/` system:
 | :--- | :--- |
 | **Install dependencies** | `pnpm install` |
 | **Dev server** | `pnpm dev` (http://localhost:3000) |
-| **Production build** | `pnpm build` *(Note: Avoid running build during MVP dev unless requested)* |
+| **Production build** | `pnpm build` |
 | **Start production** | `pnpm start` |
 | **Lint & check** | `pnpm lint` (Biome check) |
 | **Lint & fix** | `pnpm lint:fix` (Biome auto-fix) |
@@ -42,7 +42,7 @@ Detailed repository knowledge is organized in the `docs/` system:
 
 1. **Context First**: Inspect existing code and check `docs/` before making architectural or structural changes.
 2. **Locked Technology Stack**:
-   - Next.js 16.2.10 (App Router, Server Components preferred)
+   - Next.js 16.3.0 (App Router, Server Components preferred)
    - React 19.2.4
    - TypeScript 5.9.x (Do not upgrade to TS 7 for v1)
    - Tailwind CSS v4 (`@tailwindcss/postcss`) with CSS-first custom properties
@@ -64,7 +64,7 @@ Detailed repository knowledge is organized in the `docs/` system:
    - Unauthenticated users cannot search tutors or view tutor profiles.
 7. **Verification**:
    - Run `pnpm lint` after making changes to verify Biome checks pass cleanly.
-8. **Dev Server Performance**:
-   - `pnpm dev` is configured with `next dev --webpack` to prevent Turbopack Rust memory crashes (`memory allocation failed`) on low-RAM Windows development environments. Do not remove `--webpack` from `package.json`.
+8. **Development Compiler**:
+   - Keep `pnpm dev` on Next.js's default compiler. Do not add `--webpack` to development, start, build, test, or other run scripts.
 9. **Documentation Continuity**:
    - Update the relevant `docs/` files in the same change whenever product scope, architecture, models, operational policies, or milestone status changes.

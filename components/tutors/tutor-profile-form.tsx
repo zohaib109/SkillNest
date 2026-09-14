@@ -176,6 +176,7 @@ export function TutorProfileForm({
 
 			{feedback && (
 				<div
+					role={feedback.type === "error" ? "alert" : "status"}
 					className={cn(
 						"rounded-lg border px-4 py-3 text-sm",
 						feedback.type === "success"
@@ -389,6 +390,7 @@ function Chip({
 		<button
 			type="button"
 			onClick={onClick}
+			aria-pressed={active}
 			className={cn(
 				"rounded-full border px-3 py-1.5 text-sm transition-colors",
 				active

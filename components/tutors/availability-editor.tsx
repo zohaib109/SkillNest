@@ -53,7 +53,13 @@ export function AvailabilityEditor({
 		startTransition(async () => {
 			const result = await saveAvailability(rules);
 			if (result.success) {
-				setFeedback({ type: "success", message: "Availability saved." });
+				const wasModerated = initial !== null && initial.status !== "draft";
+				setFeedback({
+					type: "success",
+					message: wasModerated
+						? "Availability saved as a draft. Submit your profile for review again when ready."
+						: "Availability saved.",
+				});
 				router.refresh();
 			} else {
 				setFeedback({ type: "error", message: result.error });
@@ -65,6 +71,7 @@ export function AvailabilityEditor({
 		<div className="flex flex-col gap-6">
 			{feedback && (
 				<div
+					role={feedback.type === "error" ? "alert" : "status"}
 					className={cn(
 						"rounded-lg border px-4 py-3 text-sm",
 						feedback.type === "success"
@@ -104,6 +111,7 @@ export function AvailabilityEditor({
 									>
 										<Input
 											type="time"
+											aria-label={`${DAYS_OF_WEEK[dayValue]} start time`}
 											value={rule.startTime}
 											onChange={(e) =>
 												updateSlot(index, "startTime", e.target.value)
@@ -113,6 +121,7 @@ export function AvailabilityEditor({
 										<span className="text-muted-foreground">–</span>
 										<Input
 											type="time"
+											aria-label={`${DAYS_OF_WEEK[dayValue]} end time`}
 											value={rule.endTime}
 											onChange={(e) =>
 												updateSlot(index, "endTime", e.target.value)
