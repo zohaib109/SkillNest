@@ -1,7 +1,7 @@
 # SkillNest Development Roadmap
 
-**Last updated:** August 15, 2026
-**Current milestone:** Foundation stabilization integration smoke, followed by authenticated tutor discovery
+**Last updated:** November 25, 2026
+**Current milestone:** Finish hosted authentication acceptance, then Milestone 2 scheduling and booking holds.
 
 This file is the authoritative implementation order for future development sessions. Read it together with `project-context.md`, `architecture.md`, and `decisions.md` before making changes.
 
@@ -9,10 +9,10 @@ This file is the authoritative implementation order for future development sessi
 
 - SkillNest is a Pakistan-registered tutoring marketplace headquartered in Islamabad.
 - The business bank account will be in Pakistan; students may purchase lessons internationally.
-- All current MongoDB data is disposable test data. The application has never been deployed.
+- The user reports a successful Azure testing deployment of `feature/testing` (September 17, 2026). Do not assume deployed records are disposable; isolate development/test databases.
 - The first public launch must include paid single-lesson booking, booking-linked messaging, and Agora browser video lessons.
 - Tutor identity documents, degrees, certificates, and background checks are not required yet.
-- Hosting is not locked to Hostinger. Select infrastructure based on security, reliability, webhook support, and operational cost.
+- Preserve the reported Azure App Service testing deployment while completing public-launch hardening; verify its configuration as described in `architecture.md`.
 - Commission, cancellation, no-show, refund, and payout values are temporary mock policy values until the business finalizes them.
 
 ## Delivery Principles
@@ -27,7 +27,7 @@ This file is the authoritative implementation order for future development sessi
 
 ## Milestone 0 — Foundation Stabilization
 
-**Status:** Implemented in code; MongoDB-backed end-to-end smoke testing remains
+**Status:** Local MongoDB-backed integration passed. Hosted Atlas connectivity and a full Google OAuth callback remain open. Production email delivery is pending.
 
 Scope:
 
@@ -55,7 +55,7 @@ Exit criteria:
 
 ## Milestone 1 — Authenticated Tutor Discovery
 
-**Status:** Implemented in code; MongoDB-backed integration and browser UX smoke remain
+**Status:** MongoDB-backed moderation, approved-only discovery, and saved-tutor checks passed locally. Browser UX acceptance remains open.
 
 Scope:
 

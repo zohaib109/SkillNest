@@ -4,18 +4,18 @@
 
 | Component | Technology | Version | Usage & Responsibility |
 | :--- | :--- | :--- | :--- |
-| **Framework** | Next.js | `16.3.0` | App Router, Server Components, Route Handlers. |
+| **Framework** | Next.js | `16.4.6` | App Router, Server Components, Route Handlers. |
 | **UI Library** | React | `19.2.4` | Core view engine. |
 | **Language** | TypeScript | `5.9.x` | Strict type checking (`tsconfig.json`). |
 | **Styling** | Tailwind CSS | `v4` (`@tailwindcss/postcss`) | CSS-first custom properties and OKLCH color tokens. |
 | **Database** | MongoDB Atlas | Managed Cluster | Document database host for all application collections. |
-| **ODM** | Mongoose | `9.7.4` | Application models (`TutorProfile`, `Booking`, etc.). |
-| **Auth Engine** | Better Auth | `1.6+` | Identity, session management via native MongoDB driver. |
+| **ODM** | Mongoose | `9.11.4` | Application models such as `TutorProfile` and `SavedTutor`. |
+| **Auth Engine** | Better Auth | `1.7.7` | Identity and session management via native MongoDB driver. |
 | **Validation** | Zod | `4.4+` | Schema validation for API payloads. |
 | **Lint / Format** | Biome | `2.5+` | Formatting and linting (`pnpm lint`, `pnpm lint:fix`). |
-| **Unit Tests** | Vitest | `4.1.5` | Fast domain, validation, and component-adjacent tests. |
-| **Package Manager** | pnpm | Locked | Dependency and workspace manager. |
-| **Runtime** | Node.js | `>=20.19.0` | Minimum shared requirement for Next.js 16, Mongoose 9, and Vitest 4. |
+| **Unit Tests** | Vitest | `4.1.12` | Domain and validation tests. |
+| **Package Manager** | pnpm | `11.19.0` | Pinned dependency and workspace manager. |
+| **Runtime** | Node.js | `>=22.13.0` | Minimum Node.js version required by the pinned pnpm release. |
 
 ---
 
@@ -83,7 +83,7 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 - **Protected Routes**: `/dashboard`, `/complete-profile`, `/tutors`.
 - **Session Check**: Verifies `better-auth.session_token` or `__Secure-better-auth.session_token` cookie (note the **underscore**, not hyphen).
 - **Redirect Behavior**:
-  - Unauthenticated requests to protected paths are redirected to `/sign-in?callbackUrl=<pathname>`.
+  - Requests without a session cookie redirect to sign-in with the original path and query as the callback. Protected pages and actions validate the session and apply their own role checks.
   - Authenticated requests visiting `/sign-in` are redirected to `/dashboard` by `app/(auth)/sign-in/page.tsx`.
 
 ---
@@ -97,7 +97,7 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 2. **Application Data (Mongoose)**: Domain models (`TutorProfile`, `Booking`, etc.) reference `userId` (string) as a foreign key matching `user.id` in MongoDB.
 
 ### Server & Client Instances
-- **Server Instance (`lib/auth.ts`)**: Configures `betterAuth({ database: mongodbAdapter(client.db()), ... })`.
+- **Server Instance (`lib/auth.ts`)**: Configures `mongodbAdapter(client.db(), { client })` with a shared native client.
   - `user.additionalFields`: `role` (default: `"student"`), `status` (default: `"active"`).
   - `user.create.before` hook: Resolves only `student` or `tutor` from the constrained `selected_role` cookie; admin is never public input.
   - `user.create.after` hook: Auto-creates a `TutorProfile` shell document in Mongoose if `user.role === "tutor"`.
@@ -112,6 +112,8 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 - `lib/env.ts` validates server-only configuration before auth or database clients are created.
 - `BETTER_AUTH_SECRET` must contain at least 32 characters; missing or invalid production configuration fails fast instead of falling back to Better Auth's development secret.
 - The Better Auth MongoDB adapter receives the shared native `MongoClient`, enabling adapter-managed transactions where supported.
+- The development mailer prints verification links. Production email signup requires a transactional mail implementation.
+- `PAYMENT_RECEIVING_ACCOUNTS` is optional server-runtime JSON, read after the admin role check. Supply it privately in local or App Service settings when manual receiving instructions are needed. Build configuration does not require it.
 
 ---
 
@@ -121,12 +123,23 @@ Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as t
 `lib/db.ts` exports `connectDB()`, which manages a global cached Mongoose connection to prevent hot-reload connection leaks in development.
 Failed connection attempts clear the cached promise so a transient outage does not permanently poison the process.
 
+Both drivers take the database name from `MONGODB_URI`. Use an explicit name in
+each environment. For local development, run a replica set because the Better
+Auth adapter uses transactions.
+
+### MongoDB connectivity troubleshooting
+
+1. For `querySrv ENOTFOUND`, compare the configured Atlas hostname with the current Connect dialog, check that the cluster is running, and resolve its SRV record from the affected runtime.
+2. Once SRV resolves, use a read-only driver ping and check Atlas Network Access against the affected runtime's actual outbound IP. Local and Azure egress can differ. A TLS failure happens before database credentials are accepted. Keep certificate verification enabled.
+3. Once ping succeeds, verify the explicit database name, the database user's permissions (including index creation), and the Google OAuth callback for the app's origin. [Atlas connection troubleshooting](https://www.mongodb.com/docs/atlas/troubleshoot-connection/)
+
 ### Foundation Integration Smoke
 
-`pnpm test:smoke` exercises Better Auth signup and tutor moderation against the
-configured development MongoDB database. Each run uses unique email, user, and
-slug identifiers and removes only those exact records in teardown. The smoke test
-must never be pointed at a production database.
+`pnpm test:smoke` reads `SMOKE_MONGODB_URI` from the shell or ignored
+`.env.smoke.local`. It uses a confirmed isolated replica-set database and
+cleans up its uniquely identified fixtures. The suite exercises credential
+authentication, email verification, role enforcement, tutor server actions, and
+discovery against real MongoDB.
 
 ### Application Models
 - **`TutorProfile` (`models/TutorProfile.ts`)**:
@@ -184,3 +197,24 @@ Tailwind CSS v4 is configured via `@import "tailwindcss";` in `app/globals.css`.
 - `<head>` inline script in `app/layout.tsx` reads `localStorage.theme` and `prefers-color-scheme` to set `.dark` synchronously before render.
 - `app/layout.tsx` uses `suppressHydrationWarning` on `<html>` to ignore React's client/server class attribute discrepancy warning.
 - `<ThemeToggle />` component handles user interaction and persists selection to `localStorage`.
+
+
+---
+
+## Azure deployment handoff
+
+The user reports a successful Azure App Service testing deployment of `feature/testing` (September 17, 2026). Treat pushes to this branch as deployment-triggering.
+
+GitHub Actions history shows successful push-triggered runs from `feature/testing`.
+The workflow targets the Azure App Service `Production` slot. On `main`, its
+push filter and build job guard limit execution to `feature/testing`, including
+manual dispatch. The build uses pnpm 11.19.0 with the frozen lockfile on Node.js
+24.x. Standalone packaging copies `public` and `.next/static` and includes hidden
+files at upload.
+
+The handoff reports Linux App Service, Node.js 22 LTS, startup via `node server.js`,
+platform-provided `PORT`, and `HOSTNAME=0.0.0.0`. Verify those settings and the
+runtime patch level in Azure before deploying. For a local production smoke,
+run the packaged standalone server with its static and public assets copied in.
+
+`lib/env.ts` validates five server variables on import, so builds may need configuration as well as Azure runtime. Build configuration does not automatically populate App Service settings. See `AGENTS.md` for environment, packaging, and verification rules.

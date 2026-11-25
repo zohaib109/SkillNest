@@ -28,10 +28,10 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 
 - SkillNest is registered in Islamabad, Pakistan, and its business bank account will be located in Pakistan.
 - Students are international; the tutor supply launch remains Pakistan-first.
-- The application has never been deployed. All existing MongoDB records are test data and may be reset or migrated during development.
+- The user reports a successful Azure testing deployment of `feature/testing` (September 17, 2026). Do not assume deployed data is disposable; isolate development/test databases. See the deployment handoff in `architecture.md`.
 - Booking-linked messaging and Agora browser video lessons are required for the first public launch.
 - Tutor document, credential, and background verification is deferred; initial moderation reviews profile quality only.
-- Deployment is flexible and will be selected during production hardening rather than being locked to Hostinger.
+- Azure App Service is the reported testing deployment target. Preserve its verified contract while completing public-launch hardening.
 - Commercial policy values remain temporary mocks. The current centralized defaults live in `lib/policies.ts`.
 
 ---
@@ -39,8 +39,8 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 ## What Has Been Built
 
 ### Core Foundation & Authentication
-- **Scaffold**: Next.js 16.3.0 App Router, React 19.2, Tailwind CSS v4, TypeScript 5.9, Mongoose 9.7.
-- **Authentication**: Better Auth v1.6+ using native MongoDB adapter for `users` and `sessions` collections.
+- **Application stack**: Next.js 16.4.6 App Router, React 19.2, Tailwind CSS v4, TypeScript 5.9, and Mongoose 9.11.4.
+- **Authentication**: Better Auth 1.7.7 uses the native MongoDB driver for the `user`, `session`, `account`, and `verification` collections.
   - Supports Email/Password and Google OAuth sign-in.
   - **Strict Validation (`lib/validators/auth.ts`)**: Sign-up validation enforces full name rules (min 2 chars, letters/spaces/apostrophes/periods), email normalization (trimmed, lowercased), and strict password complexity (min 10 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char).
   - **Account-Only Signup**: Tutor sign-up creates the user account (`role: "tutor"`) and a draft `TutorProfile` shell document without collecting onboarding fields (headline, rate, bio) upfront, preparing the user for the dedicated onboarding flow.
@@ -94,7 +94,7 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 - Draft, rejected, pending-review, and inconsistent one-flag profiles fail closed in both list and detail queries.
 
 ### Temporary Payment Operations
-- The admin-only payments and payouts page contains the supplied PKR, USD, and GBP manual receiving-account reference.
+- The admin-only payments and payouts page reads the PKR, USD, and GBP manual receiving-account reference from optional server runtime configuration.
 - Manual transfers do not confirm bookings; admins must verify the amount, currency, sender, and booking reference until ledger-backed reconciliation replaces this temporary process.
 
 ---
@@ -103,9 +103,11 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 
 | Role | Permissions & Capabilities |
 | :--- | :--- |
-| **Student** | Browse approved tutors, book single lessons, manage upcoming/past bookings, update student profile. |
-| **Tutor** | Create draft profile, configure subjects, hourly rate (USD), intro video URL, and availability rules. View earnings ledger and upcoming bookings. Requires admin approval before going public. |
-| **Admin** | Review pending tutor applications (approve/reject), manage manual tutor payouts ledger, oversee platform bookings and refund requests. |
+| **Student** | Verify email, browse approved tutors, and save profiles. |
+| **Tutor** | Edit a profile, set rate and currency, configure availability, and submit for admin approval. |
+| **Admin** | Approve or reject pending profiles and view the manual payment reference. |
+
+Booking, earnings, payouts, and refund management remain roadmap items.
 
 ---
 

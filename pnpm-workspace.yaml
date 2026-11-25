@@ -1,6 +1,10 @@
 allowBuilds:
   sharp: true
   unrs-resolver: true
+overrides:
+  # Keep Vitest's Vite 8 and its PostCSS source-map dependency on patched versions.
+  vite: 8.2.4
+  source-map-js: 1.2.4
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

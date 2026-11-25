@@ -13,9 +13,11 @@
 			"components/**",
 			"actions/**",
 			"models/**",
+			"tests/**",
 			"*.ts",
 			"*.tsx",
 			"*.mjs",
+			"*.mts",
 			"*.json"
 		]
 	},

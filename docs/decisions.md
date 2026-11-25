@@ -82,7 +82,7 @@ This document records the architectural, technical, and product decisions made f
 - **Rationale**: Protects tutor privacy, encourages student sign-ups, and keeps public routes focused on conversion.
 
 ### 10. Decoupled Post-Signup Tutor Onboarding Flow
-- **Decision**: Initial tutor signup only creates the user account (`role: "tutor"`). Core tutoring profile fields (headline, bio, rate, primary/additional subjects, and weekly teaching availability) are collected in a dedicated post-signup onboarding page (`/complete-profile`).
+- **Decision**: Tutor signup creates the user account and a draft profile shell. The tutor completes the profile and weekly availability through `/complete-profile` or the dashboard before submitting for review.
 - **Rationale**: Keeps account registration simple and fast while ensuring tutors complete a structured onboarding flow before submitting their profile for approval.
 
 ### 11. Default Next.js Development Compiler
@@ -130,18 +130,23 @@ This document records the architectural, technical, and product decisions made f
 - **Constraint**: UI and transaction records must label these values as policy snapshots/configuration rather than hard-coding them across features.
 
 ### 19. Test Data and Deferred Document Verification
-- **Decision**: All current database records are disposable test data because the application has never been deployed. Tutor identity documents, degrees, certificates, and background checks are deferred.
-- **Rationale**: Development may safely reset or migrate existing records, while initial moderation focuses on profile quality.
+- **Decision (updated September 17, 2026)**: The user reports an Azure testing deployment, superseding the assumption that all records are disposable. Tutor identity documents, degrees, certificates, and background checks remain deferred.
+- **Constraint**: Verify database isolation and authorization before resets or migrations. Initial moderation continues to focus on profile quality.
 
 ### 20. Conservative Modernization Baseline (August 15, 2026)
 - **Decision**: Keep the existing App Router, Better Auth, MongoDB/Mongoose, Tailwind, and server-action architecture; modernize in place rather than rewrite it.
-- **Security Update**: Pin Next.js `16.3.0`, which includes the July 2026 framework fixes and adopts patched PostCSS and Sharp dependency ranges without unsupported package overrides.
-- **Runtime Floor**: Require Node.js `20.19.0` or newer, matching the strictest current runtime requirement in the stack (Mongoose 9).
+- **Security Update (November 25, 2026)**: Use the approved Next.js 16.4.6, Better Auth 1.7.7, Mongoose 9.11.4, and Vitest 4.1.12 releases. The lockfile records the resolved versions and targeted transitive fixes.
+- **Runtime Floor (November 25, 2026)**: Require Node.js 22.13 or newer for pinned pnpm 11.19.0.
 - **Auth Configuration**: Validate server-only environment variables, require a 32-character minimum Better Auth secret, keep `BETTER_AUTH_URL` server-side, and use Better Auth's same-origin browser client default.
 - **Moderation Invariant**: Any tutor-owned edit to moderated profile content, including weekly availability, returns the profile to `draft` and clears approval metadata.
 - **Package Management**: pnpm remains the only package manager; the accidentally committed Bun lockfile was removed.
 
 ### 21. Temporary Manual Collection Accounts
-- **Decision**: Store the supplied PKR, USD, and GBP receiving-account instructions in one server-only module and expose them only on the role-protected admin payments page.
+- **Decision**: Load the supplied PKR, USD, and GBP reference from the optional server runtime setting `PAYMENT_RECEIVING_ACCOUNTS` and show it on the role-protected admin payments page.
 - **Rationale**: Admins need a temporary operational reference before the booking-linked gateway and ledger are complete, without publishing financial details to logged-out visitors or every account holder.
 - **Constraint**: A transfer must never confirm a booking automatically. An admin must verify the amount, currency, sender, and booking reference. Replace this temporary setup with booking-scoped instructions and ledger-backed reconciliation during Milestone 3.
+
+### 22. Development Branch and Database Isolation
+
+- Develop on `main`. `feature/testing` is the Azure deployment branch and targets the App Service Production slot.
+- Use an explicit database in `MONGODB_URI` and a separately supplied `SMOKE_MONGODB_URI` for integration tests. Prefer a local replica set for disposable work.

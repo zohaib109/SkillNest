@@ -34,7 +34,7 @@ export async function approveTutor(profileId: string): Promise<ActionResult> {
 				rejectionReason: "",
 			},
 		},
-		{ new: true },
+		{ returnDocument: "after" },
 	);
 	if (!profile) {
 		return { success: false, error: "Tutor profile is not awaiting review" };
@@ -75,7 +75,7 @@ export async function rejectTutor(
 				rejectionReason: parsed.data.reason,
 			},
 		},
-		{ new: true },
+		{ returnDocument: "after" },
 	);
 	if (!profile) {
 		return { success: false, error: "Tutor profile is not awaiting review" };

@@ -1,4 +1,7 @@
-import { TEMPORARY_PAYMENT_INSTRUCTIONS as instructions } from "@/lib/payment-instructions";
+import {
+	getPaymentInstructions,
+	type PaymentInstructions,
+} from "@/lib/payment-instructions";
 import { requireRole } from "@/lib/permissions";
 
 function Detail({ label, value }: { label: string; value: string }) {
@@ -14,6 +17,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 export default async function AdminPayoutsPage() {
 	await requireRole("admin");
+	const instructions = getPaymentInstructions();
 
 	return (
 		<div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
@@ -38,6 +42,24 @@ export default async function AdminPayoutsPage() {
 				Never request a password, PIN, or one-time code.
 			</div>
 
+			{instructions ? (
+				<ReceivingAccounts instructions={instructions} />
+			) : (
+				<p className="rounded-2xl border border-border bg-white p-5 text-sm text-muted-foreground">
+					Receiving account details are unavailable.
+				</p>
+			)}
+		</div>
+	);
+}
+
+function ReceivingAccounts({
+	instructions,
+}: {
+	instructions: PaymentInstructions;
+}) {
+	return (
+		<>
 			<section className="rounded-3xl border border-border bg-white p-6 sm:p-8">
 				<div className="mb-5 flex flex-wrap items-start justify-between gap-3">
 					<div>
@@ -87,7 +109,7 @@ export default async function AdminPayoutsPage() {
 							</span>
 						</div>
 						<dl>
-							{"bankAddress" in account && (
+							{account.bankAddress && (
 								<Detail label="Bank address" value={account.bankAddress} />
 							)}
 							<Detail
@@ -95,7 +117,7 @@ export default async function AdminPayoutsPage() {
 								value={account.routingNumber}
 							/>
 							<Detail label="Account number" value={account.accountNumber} />
-							{"accountType" in account && (
+							{account.accountType && (
 								<Detail label="Account type" value={account.accountType} />
 							)}
 							<Detail label="Beneficiary" value={account.beneficiaryName} />
@@ -113,6 +135,6 @@ export default async function AdminPayoutsPage() {
 					{instructions.contactPhone}
 				</a>
 			</footer>
-		</div>
+		</>
 	);
 }

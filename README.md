@@ -13,10 +13,11 @@ SkillNest is a transactional tutoring marketplace for international students and
 
 ## Local Setup
 
-1. Install Node.js 20.19 or newer (required by Mongoose 9) and pnpm 11.19.
-2. Copy `.env.example` to `.env.local` and replace every placeholder.
-3. Install dependencies with `pnpm install`.
-4. Run `pnpm dev` and open `http://localhost:3000`.
+1. Install Node.js 22.13 or newer and pnpm 11.19.0 (the version pinned in `package.json`).
+2. Start a local MongoDB replica set or use a confirmed development Atlas cluster.
+3. Copy `.env.example` to `.env.local`. Set `MONGODB_URI` with an explicit development database name, generate a random auth secret, and set the Google OAuth credentials for the local app.
+4. Install dependencies with `pnpm install --frozen-lockfile`.
+5. Run `pnpm dev` and open `http://localhost:3000`.
 
 Use pnpm only. Local development uses the default Next.js compiler.
 
@@ -26,17 +27,30 @@ Use pnpm only. Local development uses the default Next.js compiler.
 pnpm lint
 pnpm typecheck
 pnpm test
-pnpm test:smoke
+pnpm build
 pnpm audit --prod
 ```
 
-`pnpm test:smoke` uses the configured development MongoDB database. It creates
-uniquely named test records and removes only those records when the run finishes.
-Do not point this command at a production database.
+For integration checks, set `SMOKE_MONGODB_URI` in your shell or in
+`.env.smoke.local` to a confirmed isolated development replica set with an
+explicit database name, then run `pnpm test:smoke`. The suite uses the actual
+Better Auth handler, server actions and discovery queries. It generates unique
+fixture records and removes them at the end.
 
 `BETTER_AUTH_SECRET` must be a high-entropy value of at least 32 characters. The
 auth client intentionally uses same-origin requests, so no public auth URL
 environment variable is required.
+
+For Google sign-in, register `http://localhost:3000/api/auth/callback/google` in
+the development OAuth client. Email verification links are printed by the local
+development server. A production mail provider is still required for email signup.
+See [MongoDB connectivity troubleshooting](docs/architecture.md#mongodb-connectivity-troubleshooting)
+for SRV and TLS failures.
+
+For the admin payments reference, supply `PAYMENT_RECEIVING_ACCOUNTS` as
+server-side JSON in local or hosted runtime settings. See
+`lib/payment-instructions.ts` for the field names. The payments page can run
+without this optional setting.
 
 ## Repository Context
 
