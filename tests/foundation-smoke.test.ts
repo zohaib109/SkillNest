@@ -37,6 +37,10 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 		);
 		const [studentEmail, tutorEmail, adminEmail, invalidEmail] = emails;
 		const inconsistentUserId = `${runId}-inconsistent`;
+		const bookingTutorIds = [1, 2].map((id) => `${runId}-booking-tutor-${id}`);
+		const bookingStudentIds = [1, 2, 3].map(
+			(id) => `${runId}-booking-student-${id}`,
+		);
 		let db: Db;
 		let auth: typeof import("@/lib/auth").auth;
 		let authClient: MongoClient | undefined;
@@ -111,8 +115,16 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				const authIds = [...users.map(({ _id }) => _id), ...userIds];
 				await Promise.all([
 					db.collection("tutorprofiles").deleteMany({
-						userId: { $in: [...userIds, inconsistentUserId] },
+						userId: {
+							$in: [...userIds, inconsistentUserId, ...bookingTutorIds],
+						},
 					}),
+					db
+						.collection("bookings")
+						.deleteMany({ studentId: { $in: bookingStudentIds } }),
+					db
+						.collection<{ _id: string }>("studentbookinglocks")
+						.deleteMany({ _id: { $in: bookingStudentIds } }),
 					db.collection("savedtutors").deleteMany({
 						studentId: { $in: userIds },
 					}),
@@ -275,6 +287,143 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			).toBe(true);
 			expect(await getApprovedTutorBySlug(profile.slug)).toBeNull();
 			expect((await findApprovedTutors(filters, studentId)).total).toBe(0);
+		}, 60_000);
+
+		it("serializes tutor and student reservations and releases expired and cancelled holds", async () => {
+			const { reserveLesson, cancelLessonHold } = await import(
+				"@/actions/bookings"
+			);
+			const {
+				createBookingHold,
+				getBookableWeek,
+				listStudentBookings,
+				releaseBookingHold,
+			} = await import("@/lib/bookings");
+			const { Booking, StudentBookingLock } = await import("@/models/Booking");
+			const { TutorProfile } = await import("@/models/TutorProfile");
+			const { DAY_MS, withSchedulingDefaults } = await import(
+				"@/lib/scheduling"
+			);
+			const [student, otherStudent, unrelated] = bookingStudentIds;
+			const day = new Date(
+				Math.floor(Date.now() / DAY_MS) * DAY_MS + 2 * DAY_MS,
+			);
+			const date = day.toISOString().slice(0, 10);
+			const tutors = await TutorProfile.create(
+				bookingTutorIds.map((id) => ({
+					userId: id,
+					slug: id,
+					userName: "Booking Smoke Tutor",
+					timezone: "UTC",
+					hourlyRate: 25,
+					currency: "USD",
+					status: "approved" as const,
+					isApproved: true,
+					lessonDurations: [30, 60],
+					availabilityRules: [
+						{
+							dayOfWeek: day.getUTCDay(),
+							startTime: "09:00",
+							endTime: "18:00",
+						},
+					],
+					scheduling: withSchedulingDefaults({ bufferMinutes: 15 }),
+				})),
+			);
+			const input = (profileIndex: number, time: string, duration = 60) => ({
+				profileId: String(tutors[profileIndex]._id),
+				startsAt: new Date(`${date}T${time}:00Z`),
+				duration: duration as 30 | 60,
+				studentTimezone: "Asia/Karachi",
+				amountMinor: duration === 60 ? 2500 : 1250,
+				currency: "USD",
+			});
+			requestContext.headers = new Headers();
+			expect(await reserveLesson("", new FormData())).toBe(
+				"A verified student account is required.",
+			);
+			expect(await cancelLessonHold("", new FormData())).toBe(
+				"A verified student account is required.",
+			);
+
+			const bids = await Promise.all([
+				createBookingHold(student, input(0, "09:00")),
+				createBookingHold(otherStudent, input(0, "09:30", 30)),
+			]);
+			expect(bids.filter((result) => result.success)).toHaveLength(1);
+			const winnerIndex = bids.findIndex((result) => result.success);
+			const winner = bids[winnerIndex];
+			if (!winner.success) throw new Error("Expected a reservation");
+			const [winnerId, loserId] =
+				winnerIndex === 0 ? [student, otherStudent] : [otherStudent, student];
+			const winningInput =
+				winnerIndex === 0 ? input(0, "09:00") : input(0, "09:30", 30);
+			expect(await createBookingHold(winnerId, winningInput)).toEqual(winner);
+			expect(await releaseBookingHold(unrelated, winner.id)).toBe(false);
+			expect(await listStudentBookings(unrelated)).toEqual([]);
+			expect(await Booking.findById(winner.id).lean()).toMatchObject({
+				studentTimezone: "Asia/Karachi",
+				tutorTimezone: "UTC",
+				amountMinor: winningInput.amountMinor,
+				status: "held",
+			});
+			expect(
+				(await getBookableWeek(tutors[0].slug, loserId, 30, 0))?.slots,
+			).not.toContain(`${date}T10:00:00.000Z`);
+			expect(
+				(await createBookingHold(loserId, input(0, "10:00", 30))).success,
+			).toBe(false);
+			await Booking.updateOne(
+				{ _id: winner.id },
+				{ $set: { holdExpiresAt: new Date(Date.now() - 1000) } },
+			);
+			expect(await releaseBookingHold(winnerId, winner.id)).toBe(false);
+			const replacement = await createBookingHold(
+				loserId,
+				input(0, "09:30", 30),
+			);
+			expect(replacement.success).toBe(true);
+			if (!replacement.success) throw new Error(replacement.error);
+			expect(await releaseBookingHold(loserId, replacement.id)).toBe(true);
+			expect(
+				(
+					await createBookingHold(winnerId, {
+						...input(0, "09:00"),
+						amountMinor: 1,
+					})
+				).success,
+			).toBe(false);
+			expect(
+				(await createBookingHold(winnerId, input(0, "09:07"))).success,
+			).toBe(false);
+
+			const overlappingTutors = await Promise.all([
+				createBookingHold(unrelated, input(0, "13:00")),
+				createBookingHold(unrelated, input(1, "13:15")),
+			]);
+			expect(overlappingTutors.filter((result) => result.success)).toHaveLength(
+				1,
+			);
+			expect(await listStudentBookings(unrelated)).toHaveLength(1);
+			expect(await StudentBookingLock.countDocuments({ _id: unrelated })).toBe(
+				1,
+			);
+
+			await TutorProfile.updateOne(
+				{ _id: tutors[0]._id },
+				{ $set: { "scheduling.timeOffDates": [date] } },
+			);
+			expect(
+				(await createBookingHold(student, input(0, "16:00"))).success,
+			).toBe(false);
+			await TutorProfile.updateOne(
+				{ _id: tutors[1]._id },
+				{ $set: { isApproved: false } },
+			);
+			expect(await getBookableWeek(tutors[1].slug, student, 60, 0)).toBeNull();
+			expect(
+				(await createBookingHold(student, input(1, "16:00"))).success,
+			).toBe(false);
 		}, 60_000);
 	},
 );

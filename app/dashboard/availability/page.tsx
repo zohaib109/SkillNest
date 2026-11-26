@@ -1,4 +1,5 @@
 import { AvailabilityEditor } from "@/components/tutors/availability-editor";
+import { SchedulingSettingsForm } from "@/components/tutors/scheduling-settings-form";
 import { requireRole } from "@/lib/permissions";
 import { getTutorProfileByUserId } from "@/lib/tutors";
 
@@ -19,6 +20,9 @@ export default async function AvailabilityPage() {
 				</p>
 			</div>
 			<AvailabilityEditor initial={profile} />
+			{profile?.timezone && session.user.emailVerified && (
+				<SchedulingSettingsForm initial={profile.scheduling} />
+			)}
 		</div>
 	);
 }

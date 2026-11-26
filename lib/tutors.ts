@@ -1,4 +1,5 @@
 import { connectDB } from "@/lib/db";
+import { withSchedulingDefaults } from "@/lib/scheduling";
 import type { TutorSearchFilters } from "@/lib/tutor-search";
 import type {
 	PublicTutorProfileDTO,
@@ -41,6 +42,7 @@ function serialize(doc: LeanTutor): TutorProfileDTO {
 			startTime: r.startTime,
 			endTime: r.endTime,
 		})),
+		scheduling: withSchedulingDefaults(doc.scheduling),
 		status: (doc.status ?? "draft") as TutorStatus,
 		isApproved: Boolean(doc.isApproved),
 		rejectionReason: doc.rejectionReason ?? "",
@@ -57,12 +59,13 @@ function serializePublic(doc: LeanTutor): PublicTutorProfileDTO {
 		status: _status,
 		isApproved: _isApproved,
 		rejectionReason: _rejectionReason,
+		scheduling: _scheduling,
 		...safe
 	} = serialize(doc);
 	return safe;
 }
 
-const APPROVED_TUTOR_FILTER = {
+export const APPROVED_TUTOR_FILTER = {
 	status: "approved",
 	isApproved: true,
 } as const;

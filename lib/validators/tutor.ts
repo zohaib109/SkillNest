@@ -6,6 +6,7 @@ import {
 	LESSON_DURATIONS,
 	SUBJECTS,
 } from "@/lib/constants";
+import { isSupportedTimeZone } from "@/lib/scheduling";
 
 const currencyCodes = CURRENCIES.map((c) => c.code) as [string, ...string[]];
 const subjectValues = SUBJECTS as readonly string[];
@@ -31,15 +32,6 @@ function isSupportedVideoUrl(value: string): boolean {
 			hostname === "vimeo.com" ||
 			hostname.endsWith(".vimeo.com")
 		);
-	} catch {
-		return false;
-	}
-}
-
-function isSupportedTimeZone(value: string): boolean {
-	try {
-		new Intl.DateTimeFormat("en-US", { timeZone: value }).format();
-		return true;
 	} catch {
 		return false;
 	}
@@ -137,7 +129,24 @@ export const availabilitySchema = z
 		}
 	});
 
-const tutorProfileIdSchema = z
+export const schedulingSettingsSchema = z
+	.object({
+		minimumNoticeHours: z.number().int().min(0).max(168),
+		bookingHorizonDays: z.number().int().min(7).max(60),
+		bufferMinutes: z.number().int().min(0).max(60),
+		timeOffDates: z.array(z.iso.date()).max(60).refine(hasUniqueValues, {
+			message: "Each time-off date can be added once",
+		}),
+	})
+	.refine(
+		({ minimumNoticeHours, bookingHorizonDays }) =>
+			minimumNoticeHours < bookingHorizonDays * 24,
+		{
+			message: "Booking notice must be shorter than the booking window",
+		},
+	);
+
+export const tutorProfileIdSchema = z
 	.string()
 	.regex(/^[a-f\d]{24}$/i, "Invalid tutor profile id");
 

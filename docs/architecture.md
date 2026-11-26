@@ -147,11 +147,14 @@ discovery against real MongoDB.
   - `slug` (String, unique, indexed): URL-friendly profile identifier.
   - Profile info: `headline`, `bio`, `subjects`, `languages`, `hourlyRate`, `currency`, `country`, `timezone`, `introVideoUrl`.
   - Scheduling: `availabilityRules` (array of `{ dayOfWeek, startTime, endTime }`), `lessonDurations` (array of numbers, e.g. `[60]`).
+  - Private `scheduling` settings control tutor-local time-off dates, minimum notice, booking horizon, and a break after each lesson. Preexisting profiles get defaults at read time.
   - Moderation: `status` (`"draft"` | `"pending_review"` | `"approved"` | `"rejected"`), `isApproved` (Boolean, indexed).
 - **`SavedTutor` (`models/SavedTutor.ts`)**:
   - Stores a student `user.id` and approved `TutorProfile` object id.
   - A unique compound index prevents duplicate saves for one student and tutor.
-- **Planned Models**: `Booking`, `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
+- **`Booking`**: UTC lesson interval and tutor buffer, participant and timezone snapshots, quoted minor-unit amount and currency, status, and hold deadline.
+- **`StudentBookingLock`**: One sequence document per student. Booking creation writes this document and the tutor profile before checking overlaps and creating the hold in a MongoDB transaction.
+- **Planned Models**: `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
 
 ### Discovery Boundary
 
@@ -173,8 +176,7 @@ Only `pending_review` profiles may be approved or rejected. Discovery must requi
 
 ### Planned Transactional Boundaries
 
-- `Booking`: one purchased lesson, UTC schedule, participant timezone snapshots, lifecycle state.
-- `BookingHold`: short-lived slot reservation used during checkout and enforced atomically.
+- An unpaid hold blocks competing reservations until its deadline or owner release. Expiry is enforced by queries and preserves the booking record for future reconciliation. The hold transaction reads approval, the latest schedule, price, and competing bookings while holding both participant locks. Each student may have up to three active holds.
 - `Payment`: gateway attempt and reconciliation record using integer minor units.
 - `LedgerEntry`: append-only platform commission, tutor earning, refund, adjustment, and payout entries.
 - `Conversation` / `Message`: booking-scoped participant communication.

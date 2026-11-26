@@ -5,8 +5,16 @@ import { getSession } from "@/lib/auth-server";
 import { connectDB } from "@/lib/db";
 import { generateUniqueSlug } from "@/lib/slug";
 import { resetTutorModeration } from "@/lib/tutor-moderation";
-import type { AvailabilityRule, TutorProfileInput } from "@/lib/types";
-import { availabilitySchema, tutorProfileSchema } from "@/lib/validators/tutor";
+import type {
+	AvailabilityRule,
+	SchedulingSettings,
+	TutorProfileInput,
+} from "@/lib/types";
+import {
+	availabilitySchema,
+	schedulingSettingsSchema,
+	tutorProfileSchema,
+} from "@/lib/validators/tutor";
 import { TutorProfile } from "@/models/TutorProfile";
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -174,5 +182,45 @@ export async function saveAvailability(
 	revalidatePath("/complete-profile");
 	revalidatePath("/dashboard/admin/tutors");
 	revalidatePath("/tutors");
+	return { success: true };
+}
+
+export async function saveSchedulingSettings(
+	input: SchedulingSettings,
+): Promise<ActionResult> {
+	const session = await getSession();
+	if (!session?.user.emailVerified || session.user.role !== "tutor") {
+		return { success: false, error: "A verified tutor account is required" };
+	}
+	const parsed = schedulingSettingsSchema.safeParse(input);
+	if (!parsed.success) {
+		return {
+			success: false,
+			error: parsed.error.issues[0]?.message ?? "Invalid scheduling settings",
+		};
+	}
+
+	await connectDB();
+	const profile = await TutorProfile.exists({
+		userId: session.user.id,
+		timezone: { $exists: true, $ne: "" },
+	});
+	if (!profile)
+		return { success: false, error: "Save your profile timezone first" };
+	// These settings only change availability for new holds. Existing reservations
+	// and the public profile's moderation state remain intact.
+	await TutorProfile.updateOne(
+		{ _id: profile._id },
+		{
+			$set: {
+				scheduling: {
+					...parsed.data,
+					timeOffDates: parsed.data.timeOffDates.sort(),
+				},
+			},
+		},
+		{ timestamps: false },
+	);
+	revalidatePath("/dashboard/availability");
 	return { success: true };
 }

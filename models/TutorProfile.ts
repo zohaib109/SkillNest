@@ -1,4 +1,5 @@
 import mongoose, { type InferSchemaType, Schema } from "mongoose";
+import { DEFAULT_SCHEDULING } from "@/lib/scheduling";
 
 /**
  * TutorProfile — tutor-specific public & operational data.
@@ -34,6 +35,22 @@ const tutorProfileSchema = new Schema(
 		timezone: { type: String, default: "" },
 		lessonDurations: { type: [Number], default: [] },
 		availabilityRules: { type: [availabilityRuleSchema], default: [] },
+		bookingSequence: { type: Number, default: 0 },
+		scheduling: {
+			minimumNoticeHours: {
+				type: Number,
+				default: DEFAULT_SCHEDULING.minimumNoticeHours,
+			},
+			bookingHorizonDays: {
+				type: Number,
+				default: DEFAULT_SCHEDULING.bookingHorizonDays,
+			},
+			bufferMinutes: {
+				type: Number,
+				default: DEFAULT_SCHEDULING.bufferMinutes,
+			},
+			timeOffDates: { type: [String], default: [] },
+		},
 		status: {
 			type: String,
 			enum: ["draft", "pending_review", "approved", "rejected"],

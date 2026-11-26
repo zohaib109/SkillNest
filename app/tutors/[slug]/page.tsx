@@ -157,14 +157,15 @@ export default async function TutorProfilePage({
 							<dd className="font-semibold text-foreground">{tutor.country}</dd>
 						</div>
 					</dl>
-					<span
+					<Link
+						href={`/tutors/${tutor.slug}/book`}
 						className={buttonVariants({
 							variant: "default",
-							className: "mt-6 w-full opacity-60",
+							className: "mt-6 w-full",
 						})}
 					>
-						Booking opens soon
-					</span>
+						See lesson times
+					</Link>
 					<div className="mt-2">
 						<SaveTutorButton
 							profileId={tutor.id}

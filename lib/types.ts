@@ -27,6 +27,14 @@ export interface AvailabilityRule {
 	endTime: string;
 }
 
+export interface SchedulingSettings {
+	minimumNoticeHours: number;
+	bookingHorizonDays: number;
+	bufferMinutes: number;
+	/** Closed dates in the tutor's timezone. */
+	timeOffDates: string[];
+}
+
 /** Plain, serializable tutor profile shape passed to Client Components. */
 export interface TutorProfileDTO {
 	id: string;
@@ -45,6 +53,7 @@ export interface TutorProfileDTO {
 	timezone: string;
 	lessonDurations: number[];
 	availabilityRules: AvailabilityRule[];
+	scheduling: SchedulingSettings;
 	status: TutorStatus;
 	isApproved: boolean;
 	rejectionReason: string;
@@ -57,7 +66,7 @@ export interface TutorProfileDTO {
 /** Approved tutor data that is safe to expose to authenticated students. */
 export type PublicTutorProfileDTO = Omit<
 	TutorProfileDTO,
-	"userEmail" | "status" | "isApproved" | "rejectionReason"
+	"userEmail" | "status" | "isApproved" | "rejectionReason" | "scheduling"
 >;
 
 /** Input payload for saving a tutor profile (from the editor form). */

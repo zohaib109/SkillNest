@@ -1,7 +1,7 @@
 # SkillNest Development Roadmap
 
-**Last updated:** November 25, 2026
-**Current milestone:** Finish hosted authentication acceptance, then Milestone 2 scheduling and booking holds.
+**Last updated:** November 26, 2026
+**Current milestone:** Milestone 3 payment foundation. Hosted authentication and booking browser acceptance remain open. See [execution record](execution.md).
 
 This file is the authoritative implementation order for future development sessions. Read it together with `project-context.md`, `architecture.md`, and `decisions.md` before making changes.
 
@@ -69,11 +69,13 @@ Exit criteria: a verified student can find and evaluate approved tutors, and no 
 
 ## Milestone 2 — Scheduling and Booking Holds
 
+**Status:** Local MongoDB acceptance passed. Verified students can reserve and release unpaid holds. Browser and hosted acceptance remain open.
+
 Scope:
 
 - Add availability exceptions, time off, minimum notice, booking horizon, and buffers.
 - Generate timezone-safe slots from tutor rules.
-- Create `Booking` and temporary `BookingHold` models.
+- Store temporary holds and confirmed lessons in the same `Booking` collection so release, expiry, and payment confirmation can coordinate on a single record.
 - Enforce duration selection and overlap prevention atomically in MongoDB.
 - Store UTC timestamps plus the student/tutor timezone snapshots used at booking.
 

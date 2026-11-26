@@ -150,3 +150,14 @@ This document records the architectural, technical, and product decisions made f
 
 - Develop on `main`. `feature/testing` is the Azure deployment branch and targets the App Service Production slot.
 - Use an explicit database in `MONGODB_URI` and a separately supplied `SMOKE_MONGODB_URI` for integration tests. Prefer a local replica set for disposable work.
+
+### 23. Booking Calendar Defaults
+
+- Use 12 hours' notice, a 30-day booking window, and a zero-minute break until the tutor chooses other settings. A checkout hold uses a 10-minute window, which is also the lowest effective notice.
+- Generate starts at 15-minute increments from each weekly block's start time. Honor full-day closures in the tutor's timezone. Omit lessons that span a wall-clock change and distinguish the two real instants for a repeated start time.
+- Changes to private booking settings apply to future holds. Weekly hours remain part of the moderated profile.
+
+### 24. Booking Hold Transactions
+
+- Serialize reservation creation on both participant documents. The tutor profile write also orders reservation creation against approval, schedule, and rate changes. Store each hold and subsequent lesson states together in `Booking`. Use the hold deadline to free unpaid availability and retain the original record for audit and late-payment reconciliation.
+- Recompute the price and candidate at submission. Store the quoted currency and prorated integer minor-unit amount. Existing hourly rates are first rounded to whole minor units. Reject stale quotes before creating a booking.

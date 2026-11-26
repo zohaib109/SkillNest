@@ -1,6 +1,6 @@
 import type { AvailabilityRule } from "@/lib/types";
 
-function toMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
 	const [hours, minutes] = time.split(":").map(Number);
 	return hours * 60 + minutes;
 }
@@ -18,13 +18,13 @@ export function hasOverlappingAvailabilityRules(
 
 	for (const dayRules of rulesByDay.values()) {
 		const sorted = [...dayRules].sort(
-			(a, b) => toMinutes(a.startTime) - toMinutes(b.startTime),
+			(a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
 		);
 
 		for (let index = 1; index < sorted.length; index += 1) {
 			if (
-				toMinutes(sorted[index].startTime) <
-				toMinutes(sorted[index - 1].endTime)
+				timeToMinutes(sorted[index].startTime) <
+				timeToMinutes(sorted[index - 1].endTime)
 			) {
 				return true;
 			}

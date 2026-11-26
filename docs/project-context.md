@@ -93,6 +93,11 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 - Students can save and unsave approved tutors; a unique database constraint prevents duplicate saves.
 - Draft, rejected, pending-review, and inconsistent one-flag profiles fail closed in both list and detail queries.
 
+### Scheduling
+- Verified tutors can set time off, minimum notice, a booking window, and a post-lesson break from the Availability dashboard.
+- The slot engine uses tutor-local weekly hours and yields real UTC instants. It omits lessons spanning a clock change and distinguishes repeated wall times by their UTC instants.
+- Verified students can view live slots in their timezone, reserve an unpaid ten-minute hold, and release it from My Bookings. Payment and confirmed lesson delivery are pending.
+
 ### Temporary Payment Operations
 - The admin-only payments and payouts page reads the PKR, USD, and GBP manual receiving-account reference from optional server runtime configuration.
 - Manual transfers do not confirm bookings; admins must verify the amount, currency, sender, and booking reference until ledger-backed reconciliation replaces this temporary process.
@@ -103,11 +108,11 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 
 | Role | Permissions & Capabilities |
 | :--- | :--- |
-| **Student** | Verify email, browse approved tutors, and save profiles. |
+| **Student** | Verify email, browse approved tutors, save profiles, and manage unpaid lesson holds. |
 | **Tutor** | Edit a profile, set rate and currency, configure availability, and submit for admin approval. |
 | **Admin** | Approve or reject pending profiles and view the manual payment reference. |
 
-Booking, earnings, payouts, and refund management remain roadmap items.
+Paid lessons, earnings, payouts, and refund management remain roadmap items.
 
 ---
 
