@@ -62,7 +62,7 @@ Detailed repository knowledge is organized in the `docs/` system:
 6. **Data Conventions**:
    - Datetimes must be stored in **UTC** in MongoDB and formatted to the user's local timezone in the UI.
    - Tutor intro videos use external YouTube/Vimeo links only.
-   - Unauthenticated users cannot search tutors or view tutor profiles.
+   - Guests may discover approved tutors who opted into public display. Require verified student authorization for saves, holds and payment. See `docs/pilot-spec.md` and `docs/operating-costs.md`. Any paid-dependent implementation or billing activation needs prior owner approval.
 7. **Verification**:
    - Run `pnpm lint` after making changes to verify Biome checks pass cleanly.
 8. **Development Compiler**:
