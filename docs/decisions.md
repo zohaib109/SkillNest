@@ -77,9 +77,8 @@ This document records the architectural, technical, and product decisions made f
 - **Decision**: Launch scope is strictly English. No i18n routing or translation files in v1.
 - **Rationale**: Prevents premature scope creep.
 
-### 9. Logged-Out Tutor Privacy & Browsing Restrictions
-- **Decision**: Unauthenticated users cannot search tutors, browse tutor lists, or open tutor profiles. Public routes display marketing, subjects catalog, process guides, and recruitment content only.
-- **Rationale**: Protects tutor privacy, encourages student sign-ups, and keeps public routes focused on conversion.
+### 9. Guest discovery with tutor consent
+Guests may browse only explicitly public, approved profiles. A verified student retains access to approved student-only profiles. Existing tutors default to student-only. Pricing and bookable slots are public for opted-in tutors. Personal contact data, booking ownership and scheduling rules stay private. Reservation, saving and payment require a verified student. See [pilot specification](pilot-spec.md).
 
 ### 10. Decoupled Post-Signup Tutor Onboarding Flow
 - **Decision**: Tutor signup creates the user account and a draft profile shell. The tutor completes the profile and weekly availability through `/complete-profile` or the dashboard before submitting for review.

@@ -42,7 +42,7 @@ Tutoring-marketplace/
 │   ├── how-it-works/page.tsx  # Onboarding process guide
 │   ├── about/page.tsx         # Platform mission, vision & values
 │   ├── become-a-tutor/page.tsx# Tutor recruitment marketing page
-│   ├── tutors/                # Verified-student discovery and `[slug]` profiles
+│   ├── tutors/                # Audience-filtered discovery and `[slug]` profiles
 │   ├── dashboard/             # Role-based dashboard shell & sub-routes
 │   └── api/
 │       └── auth/[...all]/     # Better Auth catch-all endpoint handler
@@ -80,7 +80,7 @@ Tutoring-marketplace/
 Next.js 16 replaces `middleware.ts` with **`proxy.ts`** at the project root as the official network boundary handler.
 
 - **File**: `proxy.ts`, using the Next.js 16 named `proxy` export.
-- **Protected Routes**: `/dashboard`, `/complete-profile`, `/tutors`.
+- **Protected Routes**: `/dashboard`, `/complete-profile`, and the booking route under `/tutors/[slug]/book`.
 - **Session Check**: Verifies `better-auth.session_token` or `__Secure-better-auth.session_token` cookie (note the **underscore**, not hyphen).
 - **Redirect Behavior**:
   - Requests without a session cookie redirect to sign-in with the original path and query as the callback. Protected pages and actions validate the session and apply their own role checks.
@@ -160,9 +160,9 @@ discovery against real MongoDB.
 
 ### Discovery Boundary
 
-- `/tutors` and `/tutors/[slug]` require a verified student session.
+- The catalog and detail page select the audience on the server. Guests and non-student sessions see only explicitly public approved profiles. Verified students may also see approved student-only profiles.
 - Every list, detail, and save mutation requires both `status: "approved"` and `isApproved: true`.
-- Student-safe tutor DTOs omit email and moderation-only fields.
+- Build tutor display data from explicit fields. Calculate bookable starts on the server from private schedules and occupied intervals. Use the same quote function as checkout. Browse responses must exclude raw schedules, account IDs, busy bookings and private contact data.
 - Filters are parsed from constrained URL parameters before reaching MongoDB; keyword regular expressions are escaped and length-limited.
 
 ### Tutor Moderation State Machine

@@ -1,6 +1,6 @@
 # SkillNest product discovery
 
-Research checkpoint, November 26, 2026. The owner consultation is open. The proposals below are hypotheses for the pilot. The existing [decisions](decisions.md), [roadmap](roadmap.md), and [execution record](execution.md) describe the project before that consultation.
+Research checkpoint, November 26, 2026. The subsequent owner consultation informed the [pilot specification](pilot-spec.md). The proposals below are hypotheses for the pilot. The existing [decisions](decisions.md), [roadmap](roadmap.md), and [execution record](execution.md) describe the project before that consultation.
 
 ## What the student and tutor can do today
 
@@ -35,4 +35,4 @@ The current Next.js application already keeps Better Auth identity data separate
 - **Operations.** Walk through one missed lesson from both sides. Measure how often staff must intervene, what evidence is available, and whether each person understands the outcome. For tutors, distinguish a collected student payment, pending earnings and a completed payout. [Example tutor earnings workflow](https://help.preply.com/en/articles/4171348-when-and-how-you-get-paid-for-lessons)
 - **Pilot evidence.** Observe learners finding a suitable tutor and local time, stating the total correctly, attending a first lesson and deciding whether to rebook. Ask tutors whether their first bookings justified the preparation and administrative time. Set targets after the owner identifies the audience and the pilot establishes a baseline.
 
-The next input is the owner's description of the launch learner, first-booking experience, lesson outcome, service promise and visual direction. Those answers will guide the binding product specification and implementation priorities.
+The owner selected adult university learners, a Python-first candidate and a preference for public exploration and demonstrable progress. The [pilot specification](pilot-spec.md) records the resulting decisions.

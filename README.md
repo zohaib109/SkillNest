@@ -1,6 +1,6 @@
 # SkillNest
 
-SkillNest is a transactional tutoring marketplace for international students and Pakistan-first tutors. Students will find approved tutors, book and pay for individual lessons, coordinate through booking-linked messages, and attend lessons in an Agora-powered browser classroom.
+SkillNest helps adult university students find Pakistan-based tutors for individual academic lessons, starting with introductory Python. Its pilot connects a specific learning goal to a bookable lesson, a transparent price and an independent practice exercise. See the [product specification](docs/pilot-spec.md) and [current verification record](docs/execution.md).
 
 ## Stack
 
