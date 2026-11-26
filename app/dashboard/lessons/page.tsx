@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LessonRecap, RecapForm } from "@/components/dashboard/lesson-notes";
 import { LocalTime } from "@/components/tutors/local-time";
 import { listTutorLessons } from "@/lib/bookings";
@@ -65,6 +66,16 @@ export default async function TutorLessonsPage() {
 												<RecapForm id={String(lesson._id)} />
 											)
 										))}
+									{lesson.confirmedAt && (
+										<Link
+											className="text-sm font-medium text-primary underline"
+											href={`/dashboard/messages/${String(lesson._id)}`}
+										>
+											Lesson messages
+											{(lesson.studentSent ?? 0) > (lesson.tutorRead ?? 0) &&
+												" · unread"}
+										</Link>
+									)}
 								</li>
 							))}
 						</ul>

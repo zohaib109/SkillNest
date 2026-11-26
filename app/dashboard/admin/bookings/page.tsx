@@ -1,5 +1,7 @@
+import { reviewMessageReport } from "@/actions/booking-messages";
 import { RefundReviewForm } from "@/components/dashboard/admin/refund-review-form";
 import { LocalTime } from "@/components/tutors/local-time";
+import { pendingMessageReports } from "@/lib/booking-messages";
 import { formatLessonPrice } from "@/lib/booking-terms";
 import { listRecentBookings } from "@/lib/bookings";
 import { requireVerifiedRole } from "@/lib/permissions";
@@ -10,15 +12,56 @@ export default async function AdminBookingsPage() {
 	await requireVerifiedRole("admin");
 	const now = new Date();
 	const canReview = sandboxPaymentsEnabled();
-	const [bookings, reconciliation] = await Promise.all([
+	const [bookings, reconciliation, reports] = await Promise.all([
 		listRecentBookings(),
 		canReview ? listSandboxReconciliation() : null,
+		pendingMessageReports(),
 	]);
 	return (
 		<div className="space-y-6">
 			<h1 className="text-3xl tracking-tight text-foreground">
 				Booking Oversight
 			</h1>
+			{reports.length > 0 && (
+				<section className="space-y-3">
+					<h2 className="text-xl">Reported lesson messages</h2>
+					{reports.map((report) => (
+						<article
+							className="rounded-xl border border-border p-4"
+							key={report._id}
+						>
+							<p className="text-sm">
+								Booking {String(report.bookingId)} · sent by {report.senderRole}
+							</p>
+							<blockquote className="my-2 wrap-anywhere whitespace-pre-wrap">
+								{report.excerpt}
+							</blockquote>
+							<p className="wrap-anywhere">Report reason · {report.reason}</p>
+							<form
+								action={reviewMessageReport.bind(null, report._id)}
+								className="mt-2 space-y-2"
+							>
+								<label>
+									Review decision
+									<input
+										className="block w-full rounded border border-border bg-card p-2"
+										name="decision"
+										required
+										minLength={5}
+										maxLength={300}
+									/>
+								</label>
+								<button
+									type="submit"
+									className="cursor-pointer text-primary underline"
+								>
+									Record decision
+								</button>
+							</form>
+						</article>
+					))}
+				</section>
+			)}
 			{reconciliation && (
 				<>
 					<section className="space-y-3">

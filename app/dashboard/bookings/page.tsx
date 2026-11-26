@@ -118,6 +118,16 @@ export default async function StudentBookingsPage() {
 											studentBookingId={bookingId}
 										/>
 									)}
+								{booking.confirmedAt && (
+									<Link
+										className="text-sm font-medium text-primary underline"
+										href={`/dashboard/messages/${String(booking._id)}`}
+									>
+										Lesson messages
+										{(booking.tutorSent ?? 0) > (booking.studentRead ?? 0) &&
+											" · unread"}
+									</Link>
+								)}
 							</li>
 						);
 					})}

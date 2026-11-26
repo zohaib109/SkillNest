@@ -10,9 +10,26 @@ const recapSchema = new Schema(
 	{ _id: false },
 );
 
+const messageSchema = new Schema(
+	{
+		key: { type: String, required: true },
+		sender: { type: String, enum: ["student", "tutor"], required: true },
+		body: { type: String, required: true, maxlength: 1000 },
+		sentAt: { type: Date, required: true },
+	},
+	{ _id: false },
+);
+
 const bookingSchema = new Schema(
 	{
 		studentId: { type: String, required: true },
+		messages: { type: [messageSchema], default: undefined, select: false },
+		studentSent: { type: Number, default: 0 },
+		tutorSent: { type: Number, default: 0 },
+		studentLastSent: Date,
+		tutorLastSent: Date,
+		studentRead: { type: Number, default: 0 },
+		tutorRead: { type: Number, default: 0 },
 		tutorId: { type: String, required: true },
 		tutorProfileId: { type: Schema.Types.ObjectId, required: true },
 		tutorName: { type: String, required: true },

@@ -157,7 +157,8 @@ discovery against real MongoDB.
 - **`Payment`, `PaymentEvent`, `LedgerEntry`**: One intent per sandbox booking, verified delivery outcomes keyed by event ID, and append-only sandbox commission and pending tutor earning entries. Each document records its sandbox mode.
 - **`RefundRequest`**: One sandbox request per cancelled booking, with a server-computed mock policy snapshot and the admin's review decision, note, and timestamp. Approval adds compensating ledger entries and changes the payment status in the same transaction.
 - **Learning continuity**: Optional bounded text on the booking stores the student goal, tutor-attested recap, optional HTTPS resource and learner-reported practice. Conditional single-document writes enforce role, ownership, eligible status, elapsed end time on publication and one immutable recap. The latest practice lookup is scoped to the authenticated student and same tutor. Legacy bookings need no migration. Learning actions do not settle money.
-- **Planned Models**: `Review`, `Payout`, `Message`.
+- **`MessageReport`**: One reported message per booking and sender key. Staff see the selected excerpt and reason, and record a review decision. Normal booking lists exclude private chat.
+- **Planned Models**: `Review`, `Payout`.
 
 ### Discovery Boundary
 
@@ -181,7 +182,7 @@ Only `pending_review` profiles may be approved or rejected. Discovery must requi
 
 - An unpaid hold blocks competing reservations until its deadline or owner release. Expiry is enforced by queries and preserves the booking record for future reconciliation. The hold transaction reads approval, the latest schedule, price, and competing bookings while holding both participant locks. Each student may have up to three active holds.
 - The local simulator signs event bodies server-side. Event handling serializes by payment intent and reuses both booking participant locks before a guarded confirmation. Valid capture, ledger posting and event persistence commit together. A failed event leaves the booking held, and a capture outside the hold deadline enters reconciliation. Refund settlements and payouts require further workflows.
-- `Conversation` / `Message`: booking-scoped participant communication.
+- Booking-linked chat is a bounded subdocument array with independent per-participant counters (60 messages each, 1,000 characters each). A message, deduplication key, sender rate limit and count are updated atomically on the booking. Read the latest 20 or an older cursor page. Previously confirmed participants keep read access after cancellation. Writing closes on cancellation or 24 hours after the lesson. Only reported excerpts enter the moderation queue. A separate chat service or collection becomes worthwhile if the fixed booking scope changes.
 - Agora tokens will be issued server-side only for valid booking participants and allowed join windows.
 
 ---

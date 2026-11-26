@@ -142,6 +142,9 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 					db
 						.collection<{ _id: string }>("studentbookinglocks")
 						.deleteMany({ _id: { $in: reservationStudents } }),
+					db
+						.collection("messagereports")
+						.deleteMany({ bookingId: { $in: paymentIds } }),
 					db.collection("payments").deleteMany({ _id: { $in: paymentIds } }),
 					db
 						.collection("refundrequests")
@@ -431,6 +434,79 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			expect(await lastPracticeWithTutor(student, tutor)).toBeNull();
 		});
 
+		it("scopes booking messages, concurrent retries, reports and unread state to the lesson", async () => {
+			const { Booking } = await import("@/models/Booking");
+			const { MessageReport } = await import("@/models/MessageReport");
+			const {
+				sendThreadMessage,
+				readThread,
+				markThreadRead,
+				reportThreadMessage,
+			} = await import("@/lib/booking-messages");
+			const student = { id: bookingStudentIds[0], role: "student" as const },
+				tutor = { id: `${runId}-thread-tutor`, role: "tutor" as const },
+				other = { ...student, id: bookingStudentIds[2] };
+			const day = new Date(Date.now() + 86400000);
+			const b = await Booking.create({
+				studentId: student.id,
+				tutorId: tutor.id,
+				tutorProfileId: new mongoose.Types.ObjectId(),
+				tutorName: "Test",
+				startsAt: day,
+				endsAt: new Date(+day + 1800000),
+				blockedUntil: new Date(+day + 1800000),
+				duration: 30,
+				tutorTimezone: "UTC",
+				studentTimezone: "UTC",
+				amountMinor: 1250,
+				currency: "USD",
+				status: "confirmed",
+				holdExpiresAt: day,
+				confirmedAt: new Date(),
+			});
+			const id = String(b._id),
+				nonce = crypto.randomUUID(),
+				key = `student-${nonce}`;
+			expect(await readThread(id, other)).toBeNull();
+			expect(await sendThreadMessage(id, other, nonce, "unauthorized")).toBe(
+				false,
+			);
+			expect(
+				await Promise.all([
+					sendThreadMessage(id, student, nonce, "Practise loops?"),
+					sendThreadMessage(id, student, nonce, "Practise loops?"),
+				]),
+			).toEqual([true, true]);
+			expect(await sendThreadMessage(id, student, nonce, "Changed body")).toBe(
+				false,
+			);
+			expect(
+				await sendThreadMessage(id, student, crypto.randomUUID(), "Too soon"),
+			).toBe(false);
+			const thread = await readThread(id, tutor);
+			expect(thread?.messages.map((m) => m.body)).toEqual(["Practise loops?"]);
+			expect(thread?.unread).toBe(1);
+			expect((await Booking.findById(id).lean())?.messages).toBeUndefined();
+			expect(await markThreadRead(id, tutor, 2)).toBe(false);
+			expect(await markThreadRead(id, tutor, 1)).toBe(true);
+			expect((await readThread(id, tutor))?.unread).toBe(0);
+			expect(await reportThreadMessage(id, student, key, "Own message")).toBe(
+				false,
+			);
+			expect(await reportThreadMessage(id, other, key, "Outside booking")).toBe(
+				false,
+			);
+			expect(
+				await reportThreadMessage(id, tutor, key, "Please review this message"),
+			).toBe(true);
+			expect(await reportThreadMessage(id, tutor, key, "Retry")).toBe(true);
+			expect(await MessageReport.countDocuments({ bookingId: id })).toBe(1);
+			await Booking.updateOne({ _id: id }, { $set: { status: "cancelled" } });
+			expect(
+				await sendThreadMessage(id, tutor, crypto.randomUUID(), "Too late"),
+			).toBe(false);
+			expect((await readThread(id, tutor))?.canSend).toBe(false);
+		});
 		it("serializes tutor and student reservations and releases expired and cancelled holds", async () => {
 			const { reserveLesson, cancelLessonHold } = await import(
 				"@/actions/bookings"
