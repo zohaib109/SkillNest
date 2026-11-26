@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { CancelHoldForm } from "@/components/dashboard/cancel-hold-form";
+import { SandboxCancellationForm } from "@/components/dashboard/sandbox-cancellation-form";
 import { SandboxCheckoutForm } from "@/components/dashboard/sandbox-checkout-form";
 import { LocalTime } from "@/components/tutors/local-time";
 import { buttonVariants } from "@/components/ui/button";
 import { formatLessonPrice } from "@/lib/booking-terms";
 import { listStudentBookings } from "@/lib/bookings";
 import { requireVerifiedRole } from "@/lib/permissions";
+import { listStudentRefunds } from "@/lib/refunds";
 import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
 
 export default async function StudentBookingsPage() {
@@ -13,6 +15,18 @@ export default async function StudentBookingsPage() {
 	const bookings = await listStudentBookings(session.user.id);
 	const now = new Date();
 	const canSimulate = sandboxPaymentsEnabled();
+	const sandboxBookingIds = bookings
+		.filter(
+			({ status, paymentMode }) =>
+				status === "cancelled" && paymentMode === "sandbox",
+		)
+		.map(({ _id }) => String(_id));
+	const refunds = sandboxBookingIds.length
+		? await listStudentRefunds(session.user.id, sandboxBookingIds)
+		: [];
+	const refundsByBooking = new Map(
+		refunds.map((refund) => [String(refund._id), refund]),
+	);
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-wrap items-center justify-between gap-4">
@@ -38,6 +52,7 @@ export default async function StudentBookingsPage() {
 								? "expired"
 								: booking.status;
 						const bookingId = String(booking._id);
+						const refund = refundsByBooking.get(bookingId);
 						return (
 							<li
 								key={bookingId}
@@ -51,6 +66,14 @@ export default async function StudentBookingsPage() {
 										<LocalTime value={booking.startsAt.toISOString()} /> ·{" "}
 										{booking.duration} min
 									</p>
+									{refund && (
+										<p className="text-sm text-muted-foreground">
+											Sandbox refund {refund.status}
+											{refund.status === "approved"
+												? ` · ${formatLessonPrice(refund.amountMinor, refund.currency)}`
+												: ""}
+										</p>
+									)}
 									<p className="text-sm">
 										{formatLessonPrice(booking.amountMinor, booking.currency)} ·{" "}
 										{booking.paymentMode === "sandbox" && status === "confirmed"
@@ -71,6 +94,12 @@ export default async function StudentBookingsPage() {
 										)}
 									</div>
 								)}
+								{canSimulate &&
+									status === "confirmed" &&
+									booking.paymentMode === "sandbox" &&
+									booking.startsAt > now && (
+										<SandboxCancellationForm bookingId={bookingId} />
+									)}
 							</li>
 						);
 					})}

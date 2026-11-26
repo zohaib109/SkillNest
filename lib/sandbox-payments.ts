@@ -102,10 +102,7 @@ export async function recordSandboxPaymentEvent(
 				payment.currency !== event.currency
 			) {
 				outcome = "amount_mismatch";
-			} else if (
-				payment.status !== "captured" &&
-				payment.status !== "refund_required"
-			) {
+			} else if (payment.status === "pending" || payment.status === "failed") {
 				if (event.kind === "failed") {
 					outcome = "failed";
 					status = "failed";

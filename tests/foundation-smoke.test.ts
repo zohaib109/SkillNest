@@ -144,6 +144,9 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 						.deleteMany({ _id: { $in: reservationStudents } }),
 					db.collection("payments").deleteMany({ _id: { $in: paymentIds } }),
 					db
+						.collection("refundrequests")
+						.deleteMany({ _id: { $in: paymentIds } }),
+					db
 						.collection("paymentevents")
 						.deleteMany({ paymentId: { $in: paymentIds } }),
 					db
@@ -464,7 +467,17 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				const { runSandboxCheckout } = await import(
 					"@/actions/sandbox-payments"
 				);
-				const { createBookingHold } = await import("@/lib/bookings");
+				const { decideSandboxRefund, requestSandboxCancellation } =
+					await import("@/actions/refunds");
+				const { createBookingHold, listTutorLessons } = await import(
+					"@/lib/bookings"
+				);
+				const {
+					cancelAndRequestSandboxRefund,
+					listSandboxReconciliation,
+					listStudentRefunds,
+					reviewSandboxRefund,
+				} = await import("@/lib/refunds");
 				const { DAY_MS } = await import("@/lib/scheduling");
 				const {
 					recordSandboxPaymentEvent,
@@ -609,6 +622,97 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				expect((await Payment.findById(late.id))?.status).toBe(
 					"refund_required",
 				);
+
+				expect(await listTutorLessons(bookingTutorIds[0])).toEqual([]);
+				expect(
+					(await listTutorLessons(paymentTutorId)).map(({ _id }) =>
+						String(_id),
+					),
+				).toEqual([first.id]);
+				const reason = "I need to reschedule the lesson.";
+				expect(
+					await cancelAndRequestSandboxRefund(
+						bookingStudentIds[0],
+						first.id,
+						reason,
+					),
+				).toBe(false);
+				expect(
+					await cancelAndRequestSandboxRefund(
+						paymentStudentId,
+						first.id,
+						reason,
+					),
+				).toBe(true);
+				expect(
+					await cancelAndRequestSandboxRefund(
+						paymentStudentId,
+						first.id,
+						reason,
+					),
+				).toBe(true);
+				expect((await Booking.findById(first.id))?.status).toBe("cancelled");
+				expect(
+					await listStudentRefunds(bookingStudentIds[0], [first.id]),
+				).toEqual([]);
+				expect(
+					(await listSandboxReconciliation()).requests.find(
+						({ _id }) => String(_id) === first.id,
+					),
+				).toMatchObject({ amountMinor: 2500, status: "requested" });
+				expect(await decideSandboxRefund("", new FormData())).toBe(
+					"A verified administrator account is required.",
+				);
+				requestContext.headers = await signIn(studentEmail);
+				expect(await decideSandboxRefund("", new FormData())).toBe(
+					"A verified administrator account is required.",
+				);
+				await db
+					.collection("user")
+					.updateOne({ email: adminEmail }, { $set: { emailVerified: true } });
+				requestContext.headers = await signIn(adminEmail);
+				expect(await requestSandboxCancellation("", new FormData())).toBe(
+					"A verified student account is required.",
+				);
+				const refundForm = new FormData();
+				refundForm.set("bookingId", first.id);
+				refundForm.set("decision", "approved");
+				refundForm.set("note", "Approved per the sandbox notice window.");
+				const decisions = await Promise.all([
+					decideSandboxRefund("", refundForm),
+					decideSandboxRefund("", refundForm),
+				]);
+				expect(decisions.filter((message) => message === "")).toHaveLength(1);
+				expect(
+					await reviewSandboxRefund(
+						"duplicate-review",
+						first.id,
+						"rejected",
+						"Already reviewed",
+					),
+				).toBe(false);
+				expect((await Payment.findById(first.id))?.status).toBe("refunded");
+				const refundEntries = await LedgerEntry.find({
+					paymentId: first.id,
+				}).lean();
+				expect(refundEntries).toHaveLength(4);
+				expect(
+					refundEntries.reduce(
+						(balance, { amountMinor }) => balance + amountMinor,
+						0,
+					),
+				).toBe(0);
+				const repeatedCapture = bodyFor(first.id, "distinct-replay");
+				expect(
+					await recordSandboxPaymentEvent(
+						repeatedCapture,
+						signSandboxPaymentEvent(repeatedCapture),
+					),
+				).toBe("ignored");
+				expect(
+					(await createBookingHold(bookingStudentIds[1], holdInput("10:00")))
+						.success,
+				).toBe(true);
 			},
 			60_000,
 		);

@@ -155,7 +155,8 @@ discovery against real MongoDB.
 - **`Booking`**: UTC lesson interval and tutor buffer, participant and timezone snapshots, quoted minor-unit amount and currency, status, and hold deadline.
 - **`StudentBookingLock`**: One sequence document per student. Booking creation writes this document and the tutor profile before checking overlaps and creating the hold in a MongoDB transaction.
 - **`Payment`, `PaymentEvent`, `LedgerEntry`**: One intent per sandbox booking, verified delivery outcomes keyed by event ID, and append-only sandbox commission and pending tutor earning entries. Each document records its sandbox mode.
-- **Planned Models**: `Review`, `Payout`, `RefundRequest`, `Message`.
+- **`RefundRequest`**: One sandbox request per cancelled booking, with a server-computed mock policy snapshot and the admin's review decision, note, and timestamp. Approval adds compensating ledger entries and changes the payment status in the same transaction.
+- **Planned Models**: `Review`, `Payout`, `Message`.
 
 ### Discovery Boundary
 

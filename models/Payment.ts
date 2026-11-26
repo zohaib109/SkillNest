@@ -10,7 +10,14 @@ const paymentSchema = new Schema(
 		commissionBasisPoints: { type: Number, required: true },
 		status: {
 			type: String,
-			enum: ["pending", "failed", "captured", "refund_required"],
+			enum: [
+				"pending",
+				"failed",
+				"captured",
+				"refund_required",
+				"refunded",
+				"partially_refunded",
+			],
 			required: true,
 		},
 		sequence: { type: Number, default: 0 },
@@ -46,7 +53,12 @@ const ledgerEntrySchema = new Schema({
 	tutorId: { type: String, required: true },
 	kind: {
 		type: String,
-		enum: ["platform_commission", "pending_tutor_earning"],
+		enum: [
+			"platform_commission",
+			"pending_tutor_earning",
+			"commission_refund",
+			"pending_earning_refund",
+		],
 		required: true,
 	},
 	amountMinor: { type: Number, required: true },
@@ -66,3 +78,30 @@ export const LedgerEntry =
 	(mongoose.models.LedgerEntry as mongoose.Model<
 		InferSchemaType<typeof ledgerEntrySchema>
 	>) ?? mongoose.model("LedgerEntry", ledgerEntrySchema);
+
+const refundRequestSchema = new Schema(
+	{
+		_id: { type: Schema.Types.ObjectId, required: true },
+		studentId: { type: String, required: true, index: true },
+		mode: { type: String, enum: ["sandbox"], required: true },
+		reason: { type: String, required: true },
+		amountMinor: { type: Number, required: true },
+		currency: { type: String, required: true },
+		policyPercent: { type: Number, required: true },
+		status: {
+			type: String,
+			enum: ["requested", "approved", "rejected"],
+			required: true,
+		},
+		reviewedBy: String,
+		reviewedAt: Date,
+		reviewNote: String,
+	},
+	{ timestamps: true },
+);
+refundRequestSchema.index({ status: 1, createdAt: 1 });
+
+export const RefundRequest =
+	(mongoose.models.RefundRequest as mongoose.Model<
+		InferSchemaType<typeof refundRequestSchema>
+	>) ?? mongoose.model("RefundRequest", refundRequestSchema);

@@ -286,3 +286,16 @@ export async function listStudentBookings(studentId: string) {
 		.limit(50)
 		.lean();
 }
+
+export async function listTutorLessons(tutorId: string) {
+	await connectDB();
+	return Booking.find({ tutorId, confirmedAt: { $exists: true } })
+		.sort({ startsAt: -1 })
+		.limit(50)
+		.lean();
+}
+
+export async function listRecentBookings() {
+	await connectDB();
+	return Booking.find().sort({ _id: -1 }).limit(50).lean();
+}

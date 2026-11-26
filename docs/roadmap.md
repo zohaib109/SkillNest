@@ -1,7 +1,7 @@
 # SkillNest Development Roadmap
 
 **Last updated:** November 26, 2026
-**Current milestone:** Milestone 3 payment foundation. Hosted authentication remains open. See [execution record](execution.md).
+**Current milestone:** Milestone 5 booking-linked messaging. Earlier hosted and operations work continues when dependencies are available. See [execution record](execution.md).
 
 This file is the authoritative implementation order for future development sessions. Read it together with `project-context.md`, `architecture.md`, and `decisions.md` before making changes.
 
@@ -83,7 +83,7 @@ Exit criteria: concurrent students cannot reserve overlapping tutor time, and ex
 
 ## Milestone 3 — Payments and Financial Ledger
 
-**Status:** Local sandbox checkout and signed event processing implemented. Live merchant onboarding, provider webhooks, admin reconciliation, refunds, and payouts remain open. See [provider evaluation](payment-providers.md).
+**Status:** Local sandbox checkout, signed event processing, ledger entries, exception visibility, and admin-reviewed sandbox cancellation refunds implemented. Live merchant onboarding, provider webhooks, late-capture resolution and payouts remain open. See [provider evaluation](payment-providers.md).
 
 Scope:
 
@@ -97,6 +97,8 @@ Scope:
 Exit criteria: every payment state transition is auditable and replay-safe; failed payments never confirm bookings.
 
 ## Milestone 4 — Operational Dashboards and Notifications
+
+**Status:** Student booking and sandbox refund status, tutor lesson history, and recent admin booking and refund oversight are implemented. Receipts, notifications, support workflows, earnings and payouts remain open.
 
 Scope:
 
