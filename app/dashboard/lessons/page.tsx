@@ -76,6 +76,14 @@ export default async function TutorLessonsPage() {
 												" · unread"}
 										</Link>
 									)}
+									{lesson.confirmedAt && (
+										<Link
+											href={`/dashboard/room/${String(lesson._id)}`}
+											className="text-sm font-medium text-primary underline"
+										>
+											Lesson room and support
+										</Link>
+									)}
 								</li>
 							))}
 						</ul>

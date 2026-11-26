@@ -128,6 +128,14 @@ export default async function StudentBookingsPage() {
 											" · unread"}
 									</Link>
 								)}
+								{booking.confirmedAt && (
+									<Link
+										href={`/dashboard/room/${String(booking._id)}`}
+										className="text-sm font-medium text-primary underline"
+									>
+										Lesson room and support
+									</Link>
+								)}
 							</li>
 						);
 					})}

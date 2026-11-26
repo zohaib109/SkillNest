@@ -1,9 +1,11 @@
 import { reviewMessageReport } from "@/actions/booking-messages";
 import { RefundReviewForm } from "@/components/dashboard/admin/refund-review-form";
+import { CaseDecision } from "@/components/dashboard/room-controls";
 import { LocalTime } from "@/components/tutors/local-time";
 import { pendingMessageReports } from "@/lib/booking-messages";
 import { formatLessonPrice } from "@/lib/booking-terms";
 import { listRecentBookings } from "@/lib/bookings";
+import { issueReasons, pendingLessonIssues } from "@/lib/lesson-room";
 import { requireVerifiedRole } from "@/lib/permissions";
 import { listSandboxReconciliation } from "@/lib/refunds";
 import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
@@ -12,16 +14,59 @@ export default async function AdminBookingsPage() {
 	await requireVerifiedRole("admin");
 	const now = new Date();
 	const canReview = sandboxPaymentsEnabled();
-	const [bookings, reconciliation, reports] = await Promise.all([
+	const [bookings, reconciliation, reports, cases] = await Promise.all([
 		listRecentBookings(),
 		canReview ? listSandboxReconciliation() : null,
 		pendingMessageReports(),
+		pendingLessonIssues(),
 	]);
 	return (
 		<div className="space-y-6">
 			<h1 className="text-3xl tracking-tight text-foreground">
 				Booking Oversight
 			</h1>
+			{cases.length > 0 && (
+				<section className="space-y-3">
+					<h2 className="text-xl">Lesson issues requiring review</h2>
+					{cases.map((c) => (
+						<article
+							key={String(c._id)}
+							className="space-y-2 rounded-xl border border-border bg-card p-4"
+						>
+							<h3 className="font-medium">Booking {String(c._id)}</h3>
+							<p>
+								Scheduled · <LocalTime value={c.startsAt.toISOString()} />
+							</p>
+							<p>
+								Student check-in ·{" "}
+								{c.studentCheckedInAt ? (
+									<LocalTime value={c.studentCheckedInAt.toISOString()} />
+								) : (
+									"No event"
+								)}
+							</p>
+							<p>
+								Tutor check-in ·{" "}
+								{c.tutorCheckedInAt ? (
+									<LocalTime value={c.tutorCheckedInAt.toISOString()} />
+								) : (
+									"No event"
+								)}
+							</p>
+							{c.incidentStatements?.map((s) => (
+								<p key={s.role} className="wrap-anywhere">
+									{s.role} · {issueReasons[s.reason]} ·{" "}
+									<LocalTime value={s.reportedAt.toISOString()} /> · {s.detail}
+								</p>
+							))}
+							{c.incidentDecisions?.map((d) => (
+								<p key={d.revision}>Previous review · {d.note}</p>
+							))}
+							<CaseDecision id={String(c._id)} revision={c.incidentRevision} />
+						</article>
+					))}
+				</section>
+			)}
 			{reports.length > 0 && (
 				<section className="space-y-3">
 					<h2 className="text-xl">Reported lesson messages</h2>

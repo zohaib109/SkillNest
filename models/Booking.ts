@@ -20,6 +20,29 @@ const messageSchema = new Schema(
 	{ _id: false },
 );
 
+const incidentStatementSchema = new Schema(
+	{
+		role: { type: String, enum: ["student", "tutor"], required: true },
+		reason: {
+			type: String,
+			enum: ["could_not_connect", "other_person_absent", "other"],
+			required: true,
+		},
+		detail: { type: String, maxlength: 400, required: true },
+		reportedAt: { type: Date, required: true },
+	},
+	{ _id: false },
+);
+const incidentDecisionSchema = new Schema(
+	{
+		revision: { type: Number, required: true },
+		note: { type: String, required: true, maxlength: 400 },
+		reviewedAt: { type: Date, required: true },
+		reviewedBy: { type: String, required: true },
+	},
+	{ _id: false },
+);
+
 const bookingSchema = new Schema(
 	{
 		studentId: { type: String, required: true },
@@ -27,6 +50,20 @@ const bookingSchema = new Schema(
 		studentSent: { type: Number, default: 0 },
 		tutorSent: { type: Number, default: 0 },
 		studentLastSent: Date,
+		studentCheckedInAt: Date,
+		tutorCheckedInAt: Date,
+		incidentStatements: {
+			type: [incidentStatementSchema],
+			default: undefined,
+			select: false,
+		},
+		incidentDecisions: {
+			type: [incidentDecisionSchema],
+			default: undefined,
+			select: false,
+		},
+		incidentRevision: { type: Number, default: 0 },
+		incidentPending: { type: Boolean, default: false },
 		tutorLastSent: Date,
 		studentRead: { type: Number, default: 0 },
 		tutorRead: { type: Number, default: 0 },
@@ -57,6 +94,10 @@ const bookingSchema = new Schema(
 	{ timestamps: true },
 );
 
+bookingSchema.index(
+	{ incidentPending: 1, startsAt: 1 },
+	{ partialFilterExpression: { incidentPending: true } },
+);
 bookingSchema.index({ tutorId: 1, startsAt: 1, blockedUntil: 1 });
 bookingSchema.index({ studentId: 1, startsAt: -1 });
 bookingSchema.index({ studentId: 1, status: 1, holdExpiresAt: 1 });

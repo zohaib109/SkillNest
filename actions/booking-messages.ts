@@ -4,10 +4,10 @@ import { z } from "zod/v4";
 import { getSession } from "@/lib/auth-server";
 import {
 	markThreadRead,
-	type Participant,
 	reportThreadMessage,
 	sendThreadMessage,
 } from "@/lib/booking-messages";
+import type { Participant } from "@/lib/booking-participants";
 import { connectDB } from "@/lib/db";
 import { bookingIdSchema } from "@/lib/validators/booking";
 import { MessageReport } from "@/models/MessageReport";

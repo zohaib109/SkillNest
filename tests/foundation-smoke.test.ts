@@ -507,6 +507,117 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			).toBe(false);
 			expect((await readThread(id, tutor))?.canSend).toBe(false);
 		});
+		it("records check-in and both lesson reports without deciding attendance or money", async () => {
+			const { Booking } = await import("@/models/Booking");
+			const {
+				checkIn,
+				roomFor,
+				openLessonIssue,
+				reviewLessonIssue,
+				pendingLessonIssues,
+			} = await import("@/lib/lesson-room");
+			const student = { id: bookingStudentIds[0], role: "student" as const },
+				tutor = { id: `${runId}-room-tutor`, role: "tutor" as const },
+				other = { ...student, id: bookingStudentIds[2] };
+			const now = Date.now();
+			const b = await Booking.create({
+				studentId: student.id,
+				tutorId: tutor.id,
+				tutorProfileId: new mongoose.Types.ObjectId(),
+				tutorName: "Room Test",
+				startsAt: new Date(now + 3600000),
+				endsAt: new Date(now + 7200000),
+				blockedUntil: new Date(now + 7200000),
+				duration: 60,
+				tutorTimezone: "UTC",
+				studentTimezone: "UTC",
+				amountMinor: 2000,
+				currency: "USD",
+				status: "confirmed",
+				holdExpiresAt: new Date(now),
+				confirmedAt: new Date(now),
+			});
+			const id = String(b._id);
+			expect(await checkIn(id, student)).toBe(false);
+			expect(
+				await openLessonIssue(id, tutor, "could_not_connect", "Too early"),
+			).toBe(false);
+			await Booking.updateOne(
+				{ _id: id },
+				{
+					$set: {
+						startsAt: new Date(now - 60000),
+						endsAt: new Date(now + 3540000),
+					},
+				},
+			);
+			expect(await roomFor(id, other)).toBeNull();
+			expect(await checkIn(id, other)).toBe(false);
+			expect(await checkIn(id, tutor)).toBe(true);
+			const first = await roomFor(id, tutor);
+			expect(await checkIn(id, tutor)).toBe(true);
+			expect((await roomFor(id, tutor))?.tutorCheckIn).toEqual(
+				first?.tutorCheckIn,
+			);
+			expect(
+				await openLessonIssue(
+					id,
+					student,
+					"could_not_connect",
+					"My microphone disconnected.",
+				),
+			).toBe(true);
+			expect(
+				await openLessonIssue(
+					id,
+					student,
+					"could_not_connect",
+					"My microphone disconnected.",
+				),
+			).toBe(true);
+			expect(
+				await openLessonIssue(
+					id,
+					tutor,
+					"other_person_absent",
+					"I waited in the room.",
+				),
+			).toBe(true);
+			expect((await roomFor(id, tutor))?.ownStatement?.detail).toBe(
+				"I waited in the room.",
+			);
+			expect((await roomFor(id, tutor))?.otherReported).toBe(true);
+			expect(JSON.stringify(await roomFor(id, tutor))).not.toContain(
+				"microphone disconnected",
+			);
+			expect(
+				(await pendingLessonIssues()).find((c) => String(c._id) === id)
+					?.incidentStatements?.length,
+			).toBe(2);
+			expect(
+				await reviewLessonIssue(id, "test-admin", 1, "Stale decision"),
+			).toBe(false);
+			expect(
+				await reviewLessonIssue(
+					id,
+					"test-admin",
+					2,
+					"We will arrange another time.",
+				),
+			).toBe(true);
+			expect(await reviewLessonIssue(id, "test-admin", 2, "Duplicate")).toBe(
+				false,
+			);
+			expect((await roomFor(id, student))?.decision).toBe(
+				"We will arrange another time.",
+			);
+			await Booking.updateOne(
+				{ _id: id },
+				{ $set: { endsAt: new Date(now - 16 * 60000) } },
+			);
+			expect(await checkIn(id, student)).toBe(false);
+			expect((await Booking.findById(id).lean())?.status).toBe("confirmed");
+		});
 		it("serializes tutor and student reservations and releases expired and cancelled holds", async () => {
 			const { reserveLesson, cancelLessonHold } = await import(
 				"@/actions/bookings"

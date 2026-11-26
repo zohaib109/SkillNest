@@ -1,21 +1,12 @@
 import "server-only";
+
+import { type Participant, participantScope } from "@/lib/booking-participants";
 import { connectDB } from "@/lib/db";
 import { Booking, type BookingDoc } from "@/models/Booking";
 import { MessageReport } from "@/models/MessageReport";
 
-export type Participant = { id: string; role: "student" | "tutor" };
 const pageSize = 20;
 const limitPerParticipant = 60;
-function participantScope(id: string, actor: Participant) {
-	return {
-		_id: id,
-		...(actor.role === "student"
-			? { studentId: actor.id }
-			: { tutorId: actor.id }),
-		confirmedAt: { $exists: true },
-	};
-}
-
 export async function readThread(
 	id: string,
 	actor: Participant,
