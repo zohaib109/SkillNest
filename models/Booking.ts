@@ -20,6 +20,8 @@ const bookingSchema = new Schema(
 			enum: ["held", "confirmed", "cancelled", "completed"],
 		},
 		holdExpiresAt: { type: Date, required: true },
+		confirmedAt: Date,
+		paymentMode: { type: String, enum: ["sandbox"] },
 		cancelledAt: Date,
 	},
 	{ timestamps: true },

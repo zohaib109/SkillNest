@@ -96,7 +96,7 @@ Unlike fast-paced lesson mills, SkillNest prioritizes focused growth, transparen
 ### Scheduling
 - Verified tutors can set time off, minimum notice, a booking window, and a post-lesson break from the Availability dashboard.
 - The slot engine uses tutor-local weekly hours and yields real UTC instants. It omits lessons spanning a clock change and distinguishes repeated wall times by their UTC instants.
-- Verified students can view live slots in their timezone, reserve an unpaid ten-minute hold, and release it from My Bookings. Payment and confirmed lesson delivery are pending.
+- Verified students can view live slots in their timezone, reserve an unpaid ten-minute hold, and release it from My Bookings. The local sandbox can confirm test lessons and post simulated financial records. Live checkout and lesson delivery are pending.
 
 ### Temporary Payment Operations
 - The admin-only payments and payouts page reads the PKR, USD, and GBP manual receiving-account reference from optional server runtime configuration.

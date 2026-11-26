@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { CancelHoldForm } from "@/components/dashboard/cancel-hold-form";
+import { SandboxCheckoutForm } from "@/components/dashboard/sandbox-checkout-form";
 import { LocalTime } from "@/components/tutors/local-time";
 import { buttonVariants } from "@/components/ui/button";
 import { formatLessonPrice } from "@/lib/booking-terms";
 import { listStudentBookings } from "@/lib/bookings";
 import { requireVerifiedRole } from "@/lib/permissions";
+import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
 
 export default async function StudentBookingsPage() {
 	const session = await requireVerifiedRole("student");
 	const bookings = await listStudentBookings(session.user.id);
 	const now = new Date();
+	const canSimulate = sandboxPaymentsEnabled();
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-wrap items-center justify-between gap-4">
@@ -18,6 +21,11 @@ export default async function StudentBookingsPage() {
 					Find a tutor
 				</Link>
 			</div>
+			{canSimulate && (
+				<p className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
+					Sandbox checkout simulates payments using test data only.
+				</p>
+			)}
 			{bookings.length === 0 ? (
 				<p className="rounded-2xl border border-border bg-white p-6 text-sm text-muted-foreground">
 					Choose a tutor and hold an available lesson time to get started.
@@ -45,16 +53,23 @@ export default async function StudentBookingsPage() {
 									</p>
 									<p className="text-sm">
 										{formatLessonPrice(booking.amountMinor, booking.currency)} ·{" "}
-										{status === "held"
-											? "Unpaid hold"
-											: status.charAt(0).toUpperCase() + status.slice(1)}
+										{booking.paymentMode === "sandbox" && status === "confirmed"
+											? "Confirmed · sandbox"
+											: status === "held"
+												? "Unpaid hold"
+												: status.charAt(0).toUpperCase() + status.slice(1)}
 									</p>
 								</div>
 								{status === "held" && (
-									<CancelHoldForm
-										bookingId={bookingId}
-										expiresAt={booking.holdExpiresAt.toISOString()}
-									/>
+									<div className="space-y-2">
+										<CancelHoldForm
+											bookingId={bookingId}
+											expiresAt={booking.holdExpiresAt.toISOString()}
+										/>
+										{canSimulate && (
+											<SandboxCheckoutForm bookingId={bookingId} />
+										)}
+									</div>
 								)}
 							</li>
 						);

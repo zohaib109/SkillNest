@@ -154,7 +154,8 @@ discovery against real MongoDB.
   - A unique compound index prevents duplicate saves for one student and tutor.
 - **`Booking`**: UTC lesson interval and tutor buffer, participant and timezone snapshots, quoted minor-unit amount and currency, status, and hold deadline.
 - **`StudentBookingLock`**: One sequence document per student. Booking creation writes this document and the tutor profile before checking overlaps and creating the hold in a MongoDB transaction.
-- **Planned Models**: `Payment`, `Review`, `Payout`, `RefundRequest`, `Message`.
+- **`Payment`, `PaymentEvent`, `LedgerEntry`**: One intent per sandbox booking, verified delivery outcomes keyed by event ID, and append-only sandbox commission and pending tutor earning entries. Each document records its sandbox mode.
+- **Planned Models**: `Review`, `Payout`, `RefundRequest`, `Message`.
 
 ### Discovery Boundary
 
@@ -177,8 +178,7 @@ Only `pending_review` profiles may be approved or rejected. Discovery must requi
 ### Planned Transactional Boundaries
 
 - An unpaid hold blocks competing reservations until its deadline or owner release. Expiry is enforced by queries and preserves the booking record for future reconciliation. The hold transaction reads approval, the latest schedule, price, and competing bookings while holding both participant locks. Each student may have up to three active holds.
-- `Payment`: gateway attempt and reconciliation record using integer minor units.
-- `LedgerEntry`: append-only platform commission, tutor earning, refund, adjustment, and payout entries.
+- The local simulator signs event bodies server-side. Event handling serializes by payment intent and reuses both booking participant locks before a guarded confirmation. Valid capture, ledger posting and event persistence commit together. A failed event leaves the booking held, and a capture outside the hold deadline enters reconciliation. Refund settlements and payouts require further workflows.
 - `Conversation` / `Message`: booking-scoped participant communication.
 - Agora tokens will be issued server-side only for valid booking participants and allowed join windows.
 

@@ -4,6 +4,7 @@ import { LessonHoldForm } from "@/components/tutors/lesson-hold-form";
 import { buttonVariants } from "@/components/ui/button";
 import { getBookableWeek } from "@/lib/bookings";
 import { requireVerifiedRole } from "@/lib/permissions";
+import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
 
 export default async function BookTutorPage({
 	params,
@@ -96,6 +97,7 @@ export default async function BookTutorPage({
 							duration={duration}
 							{...quote}
 							slots={slots}
+							canSimulate={sandboxPaymentsEnabled()}
 						/>
 					) : (
 						<p className="text-sm text-muted-foreground">

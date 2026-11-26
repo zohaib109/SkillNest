@@ -14,12 +14,14 @@ export function LessonHoldForm({
 	amountMinor,
 	currency,
 	slots,
+	canSimulate,
 }: {
 	profileId: string;
 	duration: number;
 	amountMinor: number;
 	currency: string;
 	slots: string[];
+	canSimulate: boolean;
 }) {
 	const [error, action, pending] = useActionState(reserveLesson, "");
 	const router = useRouter();
@@ -85,7 +87,9 @@ export function LessonHoldForm({
 				{HOLD_MINUTES}-minute hold
 			</p>
 			<p className="text-sm text-muted-foreground">
-				Payment is currently unavailable. Holds expire automatically.
+				{canSimulate
+					? "You can simulate payment from My Bookings."
+					: "Payment is currently unavailable. Holds expire automatically."}
 			</p>
 			{error && (
 				<div className="space-y-2">

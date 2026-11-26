@@ -34,8 +34,24 @@ pnpm audit --prod
 For integration checks, set `SMOKE_MONGODB_URI` in your shell or in
 `.env.smoke.local` to a confirmed isolated development replica set with an
 explicit database name, then run `pnpm test:smoke`. The suite uses the actual
-Better Auth handler, server actions and discovery queries. It generates unique
-fixture records and removes them at the end.
+Better Auth handler, server actions, discovery queries, and booking transactions.
+It generates unique fixture records and removes them at the end.
+
+### Local sandbox checkout
+
+Use a dedicated loopback replica-set database and opt in locally. For example:
+
+```text
+MONGODB_URI=mongodb://127.0.0.1:27017/skillnest_sandbox_checkout?replicaSet=rs0&directConnection=true
+BETTER_AUTH_URL=http://localhost:3000
+SKILLNEST_ENABLE_SANDBOX_PAYMENTS=true
+```
+
+After creating a hold, choose **Simulate payment** in **My Bookings**. This
+confirms a sandbox lesson and writes test ledger entries. The simulator is
+disabled in production. To include sandbox event and reconciliation acceptance
+in `pnpm test:smoke`, set `SMOKE_MONGODB_URI` to a separate isolated database
+with the same URI shape. The test enables the simulator for its fixture run.
 
 `BETTER_AUTH_SECRET` must be a high-entropy value of at least 32 characters. The
 auth client intentionally uses same-origin requests, so no public auth URL

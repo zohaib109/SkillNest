@@ -161,3 +161,9 @@ This document records the architectural, technical, and product decisions made f
 
 - Serialize reservation creation on both participant documents. The tutor profile write also orders reservation creation against approval, schedule, and rate changes. Store each hold and subsequent lesson states together in `Booking`. Use the hold deadline to free unpaid availability and retain the original record for audit and late-payment reconciliation.
 - Recompute the price and candidate at submission. Store the quoted currency and prorated integer minor-unit amount. Existing hourly rates are first rounded to whole minor units. Reject stale quotes before creating a booking.
+
+### 25. Local Payment Simulator
+
+- Enable simulated checkout only by explicit opt-in on a loopback development/test replica set with a dedicated database. Mark confirmed test bookings and all payment records as sandbox.
+- A verified capture confirms only an active hold with the exact price and currency. The platform commission and pending tutor earning are written from the mock commission snapshot, in integer minor units. Pending earnings do not establish payout eligibility.
+- Retain a separate audit event for each verified delivery. Late captured payments require reconciliation. Confirmed lessons, audit events, and the ledger must commit in one database transaction.

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { type Db, MongoClient } from "mongodb";
 import mongoose from "mongoose";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { allowsSandboxPayments } from "@/lib/sandbox-payment-config";
 import { parseTutorSearchParams } from "@/lib/tutor-search";
 
 const { requestContext, verificationLinks } = vi.hoisted(() => ({
@@ -41,6 +42,9 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 		const bookingStudentIds = [1, 2, 3].map(
 			(id) => `${runId}-booking-student-${id}`,
 		);
+		const paymentTutorId = `${runId}-payment-tutor`;
+		const paymentStudentId = `${runId}-payment-student`;
+		const reservationStudents = [...bookingStudentIds, paymentStudentId];
 		let db: Db;
 		let auth: typeof import("@/lib/auth").auth;
 		let authClient: MongoClient | undefined;
@@ -113,18 +117,38 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 					.toArray();
 				const userIds = users.map(({ _id }) => String(_id));
 				const authIds = [...users.map(({ _id }) => _id), ...userIds];
+				const reservations = await db
+					.collection("bookings")
+					.find(
+						{ studentId: { $in: reservationStudents } },
+						{ projection: { _id: 1 } },
+					)
+					.toArray();
+				const paymentIds = reservations.map(({ _id }) => _id);
 				await Promise.all([
 					db.collection("tutorprofiles").deleteMany({
 						userId: {
-							$in: [...userIds, inconsistentUserId, ...bookingTutorIds],
+							$in: [
+								...userIds,
+								inconsistentUserId,
+								...bookingTutorIds,
+								paymentTutorId,
+							],
 						},
 					}),
 					db
 						.collection("bookings")
-						.deleteMany({ studentId: { $in: bookingStudentIds } }),
+						.deleteMany({ studentId: { $in: reservationStudents } }),
 					db
 						.collection<{ _id: string }>("studentbookinglocks")
-						.deleteMany({ _id: { $in: bookingStudentIds } }),
+						.deleteMany({ _id: { $in: reservationStudents } }),
+					db.collection("payments").deleteMany({ _id: { $in: paymentIds } }),
+					db
+						.collection("paymentevents")
+						.deleteMany({ paymentId: { $in: paymentIds } }),
+					db
+						.collection("ledgerentries")
+						.deleteMany({ paymentId: { $in: paymentIds } }),
 					db.collection("savedtutors").deleteMany({
 						studentId: { $in: userIds },
 					}),
@@ -425,5 +449,168 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				(await createBookingHold(student, input(1, "16:00"))).success,
 			).toBe(false);
 		}, 60_000);
+
+		it.runIf(
+			allowsSandboxPayments({
+				enabled: "true",
+				nodeEnv: "test",
+				mongoUri: process.env.SMOKE_MONGODB_URI ?? "",
+				authUrl: origin,
+			}),
+		)(
+			"applies signed sandbox events once, reconciles late captures, and never confirms a failed payment",
+			async () => {
+				vi.stubEnv("SKILLNEST_ENABLE_SANDBOX_PAYMENTS", "true");
+				const { runSandboxCheckout } = await import(
+					"@/actions/sandbox-payments"
+				);
+				const { createBookingHold } = await import("@/lib/bookings");
+				const { DAY_MS } = await import("@/lib/scheduling");
+				const {
+					recordSandboxPaymentEvent,
+					signSandboxPaymentEvent,
+					simulateLessonPayment,
+				} = await import("@/lib/sandbox-payments");
+				const { Booking } = await import("@/models/Booking");
+				const { LedgerEntry, Payment, PaymentEvent } = await import(
+					"@/models/Payment"
+				);
+				const { TutorProfile } = await import("@/models/TutorProfile");
+				const day = new Date(
+					Math.floor(Date.now() / DAY_MS) * DAY_MS + 2 * DAY_MS,
+				);
+				const date = day.toISOString().slice(0, 10);
+				const profile = await TutorProfile.create({
+					userId: paymentTutorId,
+					slug: paymentTutorId,
+					userName: "Sandbox Payment Tutor",
+					timezone: "UTC",
+					hourlyRate: 25,
+					currency: "USD",
+					status: "approved",
+					isApproved: true,
+					lessonDurations: [60],
+					availabilityRules: [
+						{
+							dayOfWeek: day.getUTCDay(),
+							startTime: "09:00",
+							endTime: "18:00",
+						},
+					],
+				});
+				const holdInput = (time: string) => ({
+					profileId: String(profile._id),
+					startsAt: new Date(`${date}T${time}:00Z`),
+					duration: 60 as const,
+					studentTimezone: "Asia/Karachi",
+					amountMinor: 2500,
+					currency: "USD",
+				});
+				const first = await createBookingHold(
+					paymentStudentId,
+					holdInput("10:00"),
+				);
+				const late = await createBookingHold(
+					paymentStudentId,
+					holdInput("14:00"),
+				);
+				if (!first.success || !late.success)
+					throw new Error("Expected both sandbox holds");
+				const bodyFor = (id: string, suffix: string, amount = 2500) =>
+					JSON.stringify({
+						id: `${id}:${suffix}`,
+						paymentId: id,
+						kind: "succeeded",
+						currency: "USD",
+						amountMinor: amount,
+					});
+				requestContext.headers = new Headers();
+				expect(await runSandboxCheckout("", new FormData())).toBe(
+					"A verified student account is required.",
+				);
+				expect(
+					await simulateLessonPayment(bookingStudentIds[0], first.id),
+				).toBeNull();
+				expect(
+					await simulateLessonPayment(paymentStudentId, first.id, "failed"),
+				).toBe("failed");
+				expect((await Booking.findById(first.id))?.status).toBe("held");
+				expect(await LedgerEntry.countDocuments({ paymentId: first.id })).toBe(
+					0,
+				);
+				expect(
+					await recordSandboxPaymentEvent(
+						bodyFor(first.id, "fake"),
+						"0".repeat(64),
+					),
+				).toBeNull();
+				const wrongAmount = bodyFor(first.id, "mismatch", 2499);
+				expect(
+					await recordSandboxPaymentEvent(
+						wrongAmount,
+						signSandboxPaymentEvent(wrongAmount),
+					),
+				).toBe("amount_mismatch");
+				expect((await Booking.findById(first.id))?.status).toBe("held");
+				expect(
+					await Promise.all([
+						simulateLessonPayment(paymentStudentId, first.id),
+						simulateLessonPayment(paymentStudentId, first.id),
+					]),
+				).toEqual(["confirmed", "confirmed"]);
+				expect(await Booking.findById(first.id).lean()).toMatchObject({
+					status: "confirmed",
+					paymentMode: "sandbox",
+				});
+				expect(
+					await Payment.countDocuments({ _id: first.id, status: "captured" }),
+				).toBe(1);
+				expect(
+					await PaymentEvent.countDocuments({
+						paymentId: first.id,
+						outcome: "confirmed",
+					}),
+				).toBe(1);
+				const entries = await LedgerEntry.find({ paymentId: first.id })
+					.sort({ amountMinor: 1 })
+					.lean();
+				expect(
+					entries.map(({ kind, amountMinor, mode }) => [
+						kind,
+						amountMinor,
+						mode,
+					]),
+				).toEqual([
+					["platform_commission", 375, "sandbox"],
+					["pending_tutor_earning", 2125, "sandbox"],
+				]);
+				expect(
+					await simulateLessonPayment(paymentStudentId, late.id, "failed"),
+				).toBe("failed");
+				await Booking.updateOne(
+					{ _id: late.id },
+					{ $set: { holdExpiresAt: new Date(Date.now() - 1000) } },
+				);
+				expect(
+					(await createBookingHold(bookingStudentIds[0], holdInput("14:00")))
+						.success,
+				).toBe(true);
+				const lateCapture = bodyFor(late.id, "late");
+				expect(
+					await recordSandboxPaymentEvent(
+						lateCapture,
+						signSandboxPaymentEvent(lateCapture),
+					),
+				).toBe("refund_required");
+				expect((await Booking.findById(late.id))?.status).toBe("held");
+				expect(await LedgerEntry.countDocuments({ paymentId: late.id })).toBe(
+					0,
+				);
+				expect((await Payment.findById(late.id))?.status).toBe(
+					"refund_required",
+				);
+			},
+			60_000,
+		);
 	},
 );

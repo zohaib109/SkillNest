@@ -1,7 +1,7 @@
 # SkillNest Development Roadmap
 
 **Last updated:** November 26, 2026
-**Current milestone:** Milestone 3 payment foundation. Hosted authentication and booking browser acceptance remain open. See [execution record](execution.md).
+**Current milestone:** Milestone 3 payment foundation. Hosted authentication remains open. See [execution record](execution.md).
 
 This file is the authoritative implementation order for future development sessions. Read it together with `project-context.md`, `architecture.md`, and `decisions.md` before making changes.
 
@@ -55,7 +55,7 @@ Exit criteria:
 
 ## Milestone 1 — Authenticated Tutor Discovery
 
-**Status:** MongoDB-backed moderation, approved-only discovery, and saved-tutor checks passed locally. Browser UX acceptance remains open.
+**Status:** MongoDB-backed moderation, approved-only discovery, and saved-tutor checks passed locally. Edge verified the path from email signup and verification through discovery to a tutor profile.
 
 Scope:
 
@@ -69,7 +69,7 @@ Exit criteria: a verified student can find and evaluate approved tutors, and no 
 
 ## Milestone 2 — Scheduling and Booking Holds
 
-**Status:** Local MongoDB acceptance passed. Verified students can reserve and release unpaid holds. Browser and hosted acceptance remain open.
+**Status:** Local MongoDB and Edge desktop/mobile acceptance passed. Verified students can reserve and release unpaid holds. Hosted acceptance remains open.
 
 Scope:
 
@@ -82,6 +82,8 @@ Scope:
 Exit criteria: concurrent students cannot reserve overlapping tutor time, and expired unpaid holds release safely.
 
 ## Milestone 3 — Payments and Financial Ledger
+
+**Status:** Local sandbox checkout and signed event processing implemented. Live merchant onboarding, provider webhooks, admin reconciliation, refunds, and payouts remain open. See [provider evaluation](payment-providers.md).
 
 Scope:
 
