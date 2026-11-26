@@ -21,6 +21,7 @@ const availabilityRuleSchema = new Schema(
 const tutorProfileSchema = new Schema(
 	{
 		userId: { type: String, required: true, unique: true, index: true },
+		publicListing: { type: Boolean, default: false },
 		userName: { type: String, default: "" },
 		userEmail: { type: String, default: "" },
 		slug: { type: String, required: true, unique: true, index: true },

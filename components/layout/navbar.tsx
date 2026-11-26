@@ -16,7 +16,8 @@ export async function Navbar() {
 				{ href: "/about", label: "About" },
 			]
 		: [
-				{ href: "/subjects", label: "Subjects We Teach" },
+				{ href: "/tutors", label: "Find a Tutor" },
+				{ href: "/subjects", label: "Subjects" },
 				{ href: "/how-it-works", label: "How it Works" },
 				{ href: "/about", label: "About" },
 				{ href: "/become-a-tutor", label: "Become a Tutor" },

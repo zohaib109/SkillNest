@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LessonPreview } from "@/components/tutors/lesson-preview";
 import { SaveTutorButton } from "@/components/tutors/save-tutor-button";
 import { buttonVariants } from "@/components/ui/button";
-import { DAYS_OF_WEEK } from "@/lib/constants";
-import { requireVerifiedRole } from "@/lib/permissions";
+import { getDiscoveryStudentId } from "@/lib/auth-server";
 import { getApprovedTutorBySlug, isTutorSaved } from "@/lib/tutors";
 
 function videoEmbedUrl(value: string) {
@@ -37,16 +37,22 @@ function videoEmbedUrl(value: string) {
 
 export default async function TutorProfilePage({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ slug: string }>;
+	searchParams: Promise<{ duration?: string }>;
 }) {
-	const session = await requireVerifiedRole("student");
+	const studentId = await getDiscoveryStudentId();
 	const { slug } = await params;
 	if (!/^[a-z0-9-]{1,120}$/.test(slug)) notFound();
-	const tutor = await getApprovedTutorBySlug(slug);
+	const tutor = await getApprovedTutorBySlug(
+		slug,
+		studentId,
+		Number((await searchParams).duration),
+	);
 	if (!tutor) notFound();
 	const embedUrl = videoEmbedUrl(tutor.introVideoUrl);
-	const saved = await isTutorSaved(session.user.id, tutor.id);
+	const saved = studentId ? await isTutorSaved(studentId, tutor.id) : false;
 
 	return (
 		<main className="flex-1 bg-background">
@@ -60,7 +66,7 @@ export default async function TutorProfilePage({
 					</Link>
 					<header className="rounded-3xl border border-border bg-white p-6 sm:p-8">
 						<p className="text-sm font-semibold text-primary">
-							SkillNest approved tutor
+							Profile reviewed by SkillNest
 						</p>
 						<h1 className="mt-2 text-4xl tracking-tight text-foreground">
 							{tutor.userName || "SkillNest Tutor"}
@@ -101,26 +107,27 @@ export default async function TutorProfilePage({
 						</section>
 					)}
 
-					<section className="rounded-3xl border border-border bg-white p-6 sm:p-8">
-						<h2 className="text-2xl text-foreground">Weekly availability</h2>
-						<p className="mt-2 text-sm text-muted-foreground">
-							Times are shown in the tutor&apos;s timezone: {tutor.timezone}.
-						</p>
-						<div className="mt-5 divide-y divide-border/60">
-							{tutor.availabilityRules.map((rule) => (
-								<div
-									key={`${rule.dayOfWeek}-${rule.startTime}-${rule.endTime}`}
-									className="flex items-center justify-between gap-4 py-3 text-sm"
+					<section className="space-y-3 rounded-3xl border border-border bg-white p-6 sm:p-8">
+						<h2 className="text-2xl">Lesson prices and openings</h2>
+						<nav
+							aria-label="Preview a lesson length"
+							className="flex flex-wrap gap-2"
+						>
+							{tutor.lessonDurations.map((value) => (
+								<Link
+									key={value}
+									aria-current={value === tutor.duration ? "true" : undefined}
+									className={buttonVariants({
+										variant: value === tutor.duration ? "default" : "outline",
+										size: "sm",
+									})}
+									href={`/tutors/${slug}?duration=${value}`}
 								>
-									<span className="font-medium text-foreground">
-										{DAYS_OF_WEEK[rule.dayOfWeek]}
-									</span>
-									<span className="font-mono text-muted-foreground">
-										{rule.startTime}–{rule.endTime}
-									</span>
-								</div>
+									{value} min
+								</Link>
 							))}
-						</div>
+						</nav>
+						<LessonPreview tutor={tutor} />
 					</section>
 				</div>
 
@@ -158,20 +165,22 @@ export default async function TutorProfilePage({
 						</div>
 					</dl>
 					<Link
-						href={`/tutors/${tutor.slug}/book`}
+						href={`/tutors/${tutor.slug}/book?duration=${tutor.duration ?? ""}`}
 						className={buttonVariants({
 							variant: "default",
 							className: "mt-6 w-full",
 						})}
 					>
-						See lesson times
+						{studentId ? "Choose a lesson time" : "Sign in to book"}
 					</Link>
 					<div className="mt-2">
-						<SaveTutorButton
-							profileId={tutor.id}
-							initialSaved={saved}
-							fullWidth
-						/>
+						{studentId && (
+							<SaveTutorButton
+								profileId={tutor.id}
+								initialSaved={saved}
+								fullWidth
+							/>
+						)}
 					</div>
 				</aside>
 			</div>

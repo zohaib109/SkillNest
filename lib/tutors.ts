@@ -1,5 +1,13 @@
+import { lessonQuote } from "@/lib/booking-terms";
+import { LESSON_DURATIONS } from "@/lib/constants";
 import { connectDB } from "@/lib/db";
-import { withSchedulingDefaults } from "@/lib/scheduling";
+import { isSlotOpen, occupiedLessons } from "@/lib/occupied-lessons";
+import {
+	DAY_MS,
+	findLessonSlots,
+	MINUTE_MS,
+	withSchedulingDefaults,
+} from "@/lib/scheduling";
 import type { TutorSearchFilters } from "@/lib/tutor-search";
 import type {
 	PublicTutorProfileDTO,
@@ -26,6 +34,7 @@ function serialize(doc: LeanTutor): TutorProfileDTO {
 		userId: doc.userId,
 		userName: doc.userName ?? "",
 		userEmail: doc.userEmail ?? "",
+		publicListing: doc.publicListing === true,
 		slug: doc.slug,
 		headline: doc.headline ?? "",
 		bio: doc.bio ?? "",
@@ -53,16 +62,71 @@ function serialize(doc: LeanTutor): TutorProfileDTO {
 	};
 }
 
-function serializePublic(doc: LeanTutor): PublicTutorProfileDTO {
-	const {
-		userEmail: _userEmail,
-		status: _status,
-		isApproved: _isApproved,
-		rejectionReason: _rejectionReason,
-		scheduling: _scheduling,
-		...safe
-	} = serialize(doc);
-	return safe;
+// Scheduling inputs are needed server-side. Only explicitly mapped fields leave this function.
+const DISCOVERY_FIELDS =
+	"userName userId slug headline bio subjects languages hourlyRate currency introVideoUrl country timezone lessonDurations availabilityRules scheduling ratingAverage reviewCount";
+
+async function displayProfiles(
+	docs: LeanTutor[],
+	studentId: string | null,
+	requestedDuration?: number,
+): Promise<PublicTutorProfileDTO[]> {
+	if (!docs.length) return [];
+	const now = new Date();
+	const until = new Date(now.getTime() + 7 * DAY_MS);
+	// Include bookings that start inside the maximum duration and buffer of the last candidate.
+	const busy = await occupiedLessons(
+		docs.map((doc) => doc.userId),
+		studentId,
+		now,
+		new Date(+until + (Math.max(...LESSON_DURATIONS) + 60) * MINUTE_MS),
+		now,
+	);
+	return docs.map((doc) => {
+		const durations = LESSON_DURATIONS.filter((value) =>
+			doc.lessonDurations?.includes(value),
+		);
+		const duration =
+			durations.find((value) => value === requestedDuration) ??
+			durations[0] ??
+			null;
+		const quote = duration
+			? lessonQuote(doc.hourlyRate, doc.currency, duration)
+			: null;
+		const next =
+			duration && quote
+				? findLessonSlots(
+						{
+							...doc,
+							availabilityRules: doc.availabilityRules ?? [],
+							scheduling: withSchedulingDefaults(doc.scheduling),
+						},
+						duration,
+						now,
+						now,
+						until,
+					).find((slot) => isSlotOpen(slot, doc.userId, studentId, busy))
+				: null;
+		return {
+			id: String(doc._id),
+			slug: doc.slug,
+			userName: doc.userName ?? "",
+			headline: doc.headline ?? "",
+			bio: doc.bio ?? "",
+			subjects: doc.subjects ?? [],
+			languages: doc.languages ?? [],
+			country: doc.country ?? "",
+			introVideoUrl: doc.introVideoUrl ?? "",
+			hourlyRate: doc.hourlyRate,
+			currency: doc.currency,
+			lessonDurations: durations,
+			ratingAverage: doc.ratingAverage ?? 0,
+			reviewCount: doc.reviewCount ?? 0,
+			duration,
+			quote,
+			nextStart: next?.start.toISOString() ?? null,
+		};
+	});
 }
 
 export const APPROVED_TUTOR_FILTER = {
@@ -86,11 +150,14 @@ export interface TutorDiscoveryResult {
 
 export async function findApprovedTutors(
 	filters: TutorSearchFilters,
-	studentId: string,
+	studentId: string | null,
 ): Promise<TutorDiscoveryResult> {
 	await connectDB();
 
-	const query: Record<string, unknown> = { ...APPROVED_TUTOR_FILTER };
+	const query: Record<string, unknown> = {
+		...APPROVED_TUTOR_FILTER,
+		...(!studentId && { publicListing: true }),
+	};
 	if (filters.query) {
 		const search = new RegExp(escapeRegExp(filters.query), "i");
 		query.$or = [
@@ -110,7 +177,7 @@ export async function findApprovedTutors(
 			...(filters.maxRate !== undefined ? { $lte: filters.maxRate } : {}),
 		};
 	}
-	if (filters.savedOnly) {
+	if (filters.savedOnly && studentId) {
 		query._id = {
 			$in: await SavedTutor.distinct("tutorProfileId", { studentId }),
 		};
@@ -133,17 +200,20 @@ export async function findApprovedTutors(
 	const pageCount = Math.max(1, Math.ceil(total / DISCOVERY_PAGE_SIZE));
 	const page = Math.min(filters.page, pageCount);
 	const docs = await TutorProfile.find(query)
-		.sort(sort)
+		.select(DISCOVERY_FIELDS)
+		.sort({ ...sort, _id: 1 })
 		.skip((page - 1) * DISCOVERY_PAGE_SIZE)
 		.limit(DISCOVERY_PAGE_SIZE)
 		.lean<LeanTutor[]>();
-	const savedTutorIds = await SavedTutor.distinct("tutorProfileId", {
-		studentId,
-		tutorProfileId: { $in: docs.map((doc) => String(doc._id)) },
-	});
+	const savedTutorIds = studentId
+		? await SavedTutor.distinct("tutorProfileId", {
+				studentId,
+				tutorProfileId: { $in: docs.map((doc) => String(doc._id)) },
+			})
+		: [];
 
 	return {
-		tutors: docs.map(serializePublic),
+		tutors: await displayProfiles(docs, studentId, filters.duration),
 		total,
 		page,
 		pageCount,
@@ -153,13 +223,20 @@ export async function findApprovedTutors(
 
 export async function getApprovedTutorBySlug(
 	slug: string,
+	studentId: string | null,
+	requestedDuration?: number,
 ): Promise<PublicTutorProfileDTO | null> {
 	await connectDB();
 	const doc = await TutorProfile.findOne({
 		...APPROVED_TUTOR_FILTER,
 		slug,
-	}).lean<LeanTutor>();
-	return doc ? serializePublic(doc) : null;
+		...(!studentId && { publicListing: true }),
+	})
+		.select(DISCOVERY_FIELDS)
+		.lean<LeanTutor>();
+	return doc
+		? (await displayProfiles([doc], studentId, requestedDuration))[0]
+		: null;
 }
 
 export async function isTutorSaved(studentId: string, profileId: string) {

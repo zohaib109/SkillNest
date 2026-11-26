@@ -58,6 +58,9 @@ export function TutorProfileForm({
 	} | null>(null);
 
 	const status: TutorStatus = initial?.status ?? "draft";
+	const [publicListing, setPublicListing] = useState(
+		initial?.publicListing ?? false,
+	);
 	const [headline, setHeadline] = useState(initial?.headline ?? "");
 	const [bio, setBio] = useState(initial?.bio ?? "");
 	const [subjects, setSubjects] = useState<string[]>(initial?.subjects ?? []);
@@ -97,6 +100,7 @@ export function TutorProfileForm({
 
 	function buildInput() {
 		return {
+			publicListing,
 			headline: headline.trim(),
 			bio: bio.trim(),
 			subjects,
@@ -328,6 +332,24 @@ export function TutorProfileForm({
 					</Select>
 				</Field>
 			</div>
+
+			<label className="flex items-start gap-3 rounded-xl border border-border p-4">
+				<input
+					type="checkbox"
+					checked={publicListing}
+					onChange={(e) => setPublicListing(e.target.checked)}
+					className="mt-1 size-4"
+				/>
+				<span>
+					<strong>Show my reviewed profile to visitors before signup</strong>
+					<span className="block text-sm text-muted-foreground">
+						Visitors can see your name, profile address, biography, subjects,
+						languages, country, introduction video, prices, ratings and
+						available lesson times. Keep contact details out of your profile and
+						video. Leave unchecked for verified students only.
+					</span>
+				</span>
+			</label>
 
 			{/* Actions */}
 			<div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">

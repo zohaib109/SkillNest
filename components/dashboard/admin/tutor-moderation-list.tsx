@@ -98,6 +98,11 @@ export function TutorModerationList({
 
 					<div className="flex flex-col gap-2 text-sm">
 						<p className="font-medium text-foreground">{profile.headline}</p>
+						<p>
+							{profile.publicListing
+								? "Requested public listing · check name, bio and video for contact or private details."
+								: "Visible to verified students only"}
+						</p>
 						<p className="text-muted-foreground">{profile.bio}</p>
 					</div>
 

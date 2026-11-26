@@ -99,7 +99,7 @@ export function SignInForm() {
 				setRegistrationCookies();
 
 				const targetUrl =
-					validation.data.role === "tutor" ? "/complete-profile" : "/dashboard";
+					validation.data.role === "tutor" ? "/complete-profile" : callbackUrl;
 
 				await signUp.email(
 					{
@@ -135,7 +135,7 @@ export function SignInForm() {
 			const targetUrl =
 				activeTab === "signup" && role === "tutor"
 					? "/complete-profile"
-					: "/dashboard";
+					: callbackUrl;
 
 			await signIn.social(
 				{ provider: "google", callbackURL: targetUrl },

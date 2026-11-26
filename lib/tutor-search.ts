@@ -46,7 +46,7 @@ export function parseTutorSearchParams(
 ): TutorSearchFilters {
 	const subject = scalar(params.subject);
 	const language = scalar(params.language);
-	const currency = scalar(params.currency);
+	const requestedCurrency = scalar(params.currency);
 	const duration = optionalNumber(scalar(params.duration), { integer: true });
 	const rawSort = scalar(params.sort);
 	const rawPage = optionalNumber(scalar(params.page), { integer: true });
@@ -57,6 +57,17 @@ export function parseTutorSearchParams(
 		[minRate, maxRate] = [maxRate, minRate];
 	}
 
+	// Nominal rates can only be compared within a single currency.
+	const hasPriceFilter =
+		minRate !== undefined ||
+		maxRate !== undefined ||
+		rawSort === "price_asc" ||
+		rawSort === "price_desc";
+	const currency = CURRENCIES.some((item) => item.code === requestedCurrency)
+		? requestedCurrency
+		: hasPriceFilter
+			? "USD"
+			: "";
 	return {
 		query: scalar(params.q).trim().slice(0, 80),
 		subject: SUBJECTS.includes(subject as (typeof SUBJECTS)[number])
@@ -65,7 +76,7 @@ export function parseTutorSearchParams(
 		language: LANGUAGES.includes(language as (typeof LANGUAGES)[number])
 			? language
 			: "",
-		currency: CURRENCIES.some((item) => item.code === currency) ? currency : "",
+		currency,
 		duration: LESSON_DURATIONS.includes(
 			duration as (typeof LESSON_DURATIONS)[number],
 		)

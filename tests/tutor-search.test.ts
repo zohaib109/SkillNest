@@ -29,6 +29,13 @@ describe("tutor discovery search params", () => {
 		});
 	});
 
+	it("uses one currency for every nominal price comparison", () => {
+		expect(parseTutorSearchParams({ sort: "price_asc" }).currency).toBe("USD");
+		expect(
+			parseTutorSearchParams({ maxRate: "50", currency: "GBP" }).currency,
+		).toBe("GBP");
+		expect(parseTutorSearchParams({}).currency).toBe("");
+	});
 	it("drops unsupported values and clamps pagination", () => {
 		const filters = parseTutorSearchParams({
 			subject: "Hacking",

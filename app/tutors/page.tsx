@@ -1,13 +1,14 @@
 import Link from "next/link";
+import { LessonPreview } from "@/components/tutors/lesson-preview";
 import { SaveTutorButton } from "@/components/tutors/save-tutor-button";
 import { buttonVariants } from "@/components/ui/button";
+import { getDiscoveryStudentId } from "@/lib/auth-server";
 import {
 	CURRENCIES,
 	LANGUAGES,
 	LESSON_DURATIONS,
 	SUBJECTS,
 } from "@/lib/constants";
-import { requireVerifiedRole } from "@/lib/permissions";
 import {
 	parseTutorSearchParams,
 	type TutorSearchFilters,
@@ -52,9 +53,10 @@ export default async function TutorsPage({
 }: {
 	searchParams: Promise<SearchParams>;
 }) {
-	const session = await requireVerifiedRole("student");
+	const studentId = await getDiscoveryStudentId();
 	const filters = parseTutorSearchParams(await searchParams);
-	const result = await findApprovedTutors(filters, session.user.id);
+	if (!studentId) filters.savedOnly = false;
+	const result = await findApprovedTutors(filters, studentId);
 	const savedTutorIds = new Set(result.savedTutorIds);
 
 	return (
@@ -68,8 +70,8 @@ export default async function TutorsPage({
 						Find your tutor
 					</h1>
 					<p className="max-w-2xl text-muted-foreground">
-						Compare subjects, languages, lesson lengths, and rates from profiles
-						reviewed by SkillNest.
+						Explore teaching experience, lesson prices and openings in your
+						local time. SkillNest reviews each listed profile.
 					</p>
 				</header>
 
@@ -109,7 +111,7 @@ export default async function TutorsPage({
 					</FilterSelect>
 					<FilterSelect
 						name="currency"
-						label="Currency"
+						label="Currency (price filters default to USD)"
 						value={filters.currency}
 					>
 						{CURRENCIES.map((currency) => (
@@ -131,7 +133,7 @@ export default async function TutorsPage({
 					</FilterSelect>
 					<label className="flex flex-col gap-1.5">
 						<span className="text-xs font-semibold text-foreground">
-							Minimum rate
+							Minimum hourly rate
 						</span>
 						<input
 							type="number"
@@ -145,7 +147,7 @@ export default async function TutorsPage({
 					</label>
 					<label className="flex flex-col gap-1.5">
 						<span className="text-xs font-semibold text-foreground">
-							Maximum rate
+							Maximum hourly rate
 						</span>
 						<input
 							type="number"
@@ -164,16 +166,18 @@ export default async function TutorsPage({
 						<option value="price_desc">Highest rate</option>
 						<option value="newest">Recently approved</option>
 					</FilterSelect>
-					<label className="flex h-10 items-center gap-2 self-end rounded-xl border border-input bg-background px-3 text-sm text-foreground">
-						<input
-							type="checkbox"
-							name="saved"
-							value="1"
-							defaultChecked={filters.savedOnly}
-							className="size-4 accent-primary"
-						/>
-						Saved tutors only
-					</label>
+					{studentId && (
+						<label className="flex h-10 items-center gap-2 self-end rounded-xl border border-input bg-background px-3 text-sm text-foreground">
+							<input
+								type="checkbox"
+								name="saved"
+								value="1"
+								defaultChecked={filters.savedOnly}
+								className="size-4 accent-primary"
+							/>
+							Saved tutors only
+						</label>
+					)}
 					<div className="flex items-end gap-2 lg:col-span-2 lg:justify-end">
 						<Link
 							href="/tutors"
@@ -240,6 +244,7 @@ export default async function TutorsPage({
 										</span>
 									))}
 								</div>
+								<LessonPreview tutor={tutor} />
 								<div className="grid grid-cols-2 gap-3 text-sm">
 									<CardFact
 										label="Rate"
@@ -260,12 +265,14 @@ export default async function TutorsPage({
 									/>
 								</div>
 								<div className="mt-auto grid grid-cols-2 gap-2">
-									<SaveTutorButton
-										profileId={tutor.id}
-										initialSaved={savedTutorIds.has(tutor.id)}
-									/>
+									{studentId && (
+										<SaveTutorButton
+											profileId={tutor.id}
+											initialSaved={savedTutorIds.has(tutor.id)}
+										/>
+									)}
 									<Link
-										href={`/tutors/${tutor.slug}`}
+										href={`/tutors/${tutor.slug}${tutor.duration ? `?duration=${tutor.duration}` : ""}`}
 										className={buttonVariants({ variant: "default" })}
 									>
 										View profile

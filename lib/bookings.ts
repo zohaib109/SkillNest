@@ -1,9 +1,13 @@
 import "server-only";
 
-import type { QueryFilter } from "mongoose";
 import { lessonQuote } from "@/lib/booking-terms";
 import { LESSON_DURATIONS } from "@/lib/constants";
 import { connectDB } from "@/lib/db";
+import {
+	activeBookings,
+	isSlotOpen,
+	occupiedLessons,
+} from "@/lib/occupied-lessons";
 import {
 	DAY_MS,
 	findLessonSlots,
@@ -14,20 +18,11 @@ import {
 } from "@/lib/scheduling";
 import { APPROVED_TUTOR_FILTER } from "@/lib/tutors";
 import type { bookingHoldSchema } from "@/lib/validators/booking";
-import { Booking, type BookingDoc, StudentBookingLock } from "@/models/Booking";
+import { Booking, StudentBookingLock } from "@/models/Booking";
 import { TutorProfile, type TutorProfileDoc } from "@/models/TutorProfile";
 
 const WEEK_MS = 7 * DAY_MS;
 const MAX_ACTIVE_HOLDS = 3;
-
-function activeBookings(now: Date): QueryFilter<BookingDoc> {
-	return {
-		$or: [
-			{ status: "confirmed" },
-			{ status: "held", holdExpiresAt: { $gt: now } },
-		],
-	};
-}
 
 function scheduleOf(tutor: TutorProfileDoc) {
 	return { ...tutor, scheduling: withSchedulingDefaults(tutor.scheduling) };
@@ -71,38 +66,15 @@ export async function getBookableWeek(
 	const last = candidates.at(-1);
 	let slots: LessonSlot[] = [];
 	if (first && last) {
-		const occupied = await Booking.find({
-			$and: [
-				activeBookings(now),
-				{
-					$or: [
-						{
-							tutorId: tutor.userId,
-							startsAt: { $lt: last.blockedUntil },
-							blockedUntil: { $gt: first.start },
-						},
-						{
-							studentId,
-							startsAt: { $lt: last.end },
-							endsAt: { $gt: first.start },
-						},
-					],
-				},
-			],
-		})
-			.select("tutorId studentId startsAt endsAt blockedUntil")
-			.lean();
-		slots = candidates.filter(
-			(slot) =>
-				!occupied.some(
-					(other) =>
-						(other.tutorId === tutor.userId &&
-							other.startsAt < slot.blockedUntil &&
-							other.blockedUntil > slot.start) ||
-						(other.studentId === studentId &&
-							other.startsAt < slot.end &&
-							other.endsAt > slot.start),
-				),
+		const occupied = await occupiedLessons(
+			[tutor.userId],
+			studentId,
+			first.start,
+			last.blockedUntil,
+			now,
+		);
+		slots = candidates.filter((slot) =>
+			isSlotOpen(slot, tutor.userId, studentId, occupied),
 		);
 	}
 	return {

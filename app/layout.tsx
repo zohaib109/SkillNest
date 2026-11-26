@@ -19,9 +19,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-	title: "SkillNest — Find Your Perfect Tutor",
+	title: "SkillNest — One-to-one university tutoring",
 	description:
-		"Connect with expert tutors, personalized to your goals. Learn faster, achieve more.",
+		"Browse reviewed tutor profiles, compare lesson totals and find help with introductory programming and university subjects.",
 };
 
 export default function RootLayout({

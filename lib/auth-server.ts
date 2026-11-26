@@ -13,6 +13,14 @@ export async function getSession() {
 	return session;
 }
 
+/** Only this audience can access student-only listings or saved state. */
+export async function getDiscoveryStudentId() {
+	const session = await getSession();
+	return session?.user.role === "student" && session.user.emailVerified
+		? session.user.id
+		: null;
+}
+
 /**
  * Require an authenticated session and throw if not logged in.
  * Prefer the redirecting helpers in `lib/permissions.ts` for Server Components.

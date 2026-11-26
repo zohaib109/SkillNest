@@ -38,6 +38,7 @@ function isSupportedVideoUrl(value: string): boolean {
 }
 
 export const tutorProfileSchema = z.object({
+	publicListing: z.boolean().optional(),
 	headline: z
 		.string()
 		.trim()

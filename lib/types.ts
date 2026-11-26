@@ -41,6 +41,7 @@ export interface TutorProfileDTO {
 	userId: string;
 	userName: string;
 	userEmail: string;
+	publicListing: boolean;
 	slug: string;
 	headline: string;
 	bio: string;
@@ -63,14 +64,32 @@ export interface TutorProfileDTO {
 	updatedAt: string;
 }
 
-/** Approved tutor data that is safe to expose to authenticated students. */
-export type PublicTutorProfileDTO = Omit<
+/** Allowlisted fields shared by catalog and profile pages. */
+export type PublicTutorProfileDTO = Pick<
 	TutorProfileDTO,
-	"userEmail" | "status" | "isApproved" | "rejectionReason" | "scheduling"
->;
+	| "id"
+	| "slug"
+	| "userName"
+	| "headline"
+	| "bio"
+	| "subjects"
+	| "languages"
+	| "hourlyRate"
+	| "currency"
+	| "introVideoUrl"
+	| "country"
+	| "lessonDurations"
+	| "ratingAverage"
+	| "reviewCount"
+> & {
+	duration: number | null;
+	quote: { amountMinor: number; currency: string } | null;
+	nextStart: string | null;
+};
 
 /** Input payload for saving a tutor profile (from the editor form). */
 export interface TutorProfileInput {
+	publicListing?: boolean;
 	headline: string;
 	bio: string;
 	subjects: string[];

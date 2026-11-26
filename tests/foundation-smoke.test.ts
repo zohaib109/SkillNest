@@ -209,7 +209,7 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			const profile = await getTutorProfileByUserId(String(tutor?._id));
 			if (!profile) throw new Error("Signup did not create the tutor profile");
 			expect(profile.status).toBe("draft");
-			expect(await getApprovedTutorBySlug(profile.slug)).toBeNull();
+			expect(await getApprovedTutorBySlug(profile.slug, studentId)).toBeNull();
 
 			expect(await approveTutor(profile.id)).toEqual({
 				success: false,
@@ -253,7 +253,7 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			expect((await submitTutorProfileForReview()).success).toBe(false);
 			expect((await saveAvailability(availability)).success).toBe(true);
 			expect((await submitTutorProfileForReview()).success).toBe(true);
-			expect(await getApprovedTutorBySlug(profile.slug)).toBeNull();
+			expect(await getApprovedTutorBySlug(profile.slug, studentId)).toBeNull();
 			const tutorHeaders = requestContext.headers;
 
 			await db
@@ -264,7 +264,7 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				(await rejectTutor(profile.id, "Please revise the lesson description."))
 					.success,
 			).toBe(true);
-			expect(await getApprovedTutorBySlug(profile.slug)).toBeNull();
+			expect(await getApprovedTutorBySlug(profile.slug, studentId)).toBeNull();
 			expect((await approveTutor(profile.id)).success).toBe(false);
 			const adminHeaders = requestContext.headers;
 
@@ -287,8 +287,36 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 					({ id }) => id,
 				),
 			).toEqual([profile.id]);
-			expect(await getApprovedTutorBySlug(inconsistentUserId)).toBeNull();
-			const approved = await getApprovedTutorBySlug(profile.slug);
+			expect(await getApprovedTutorBySlug(inconsistentUserId, null)).toBeNull();
+			expect(await getApprovedTutorBySlug(profile.slug, null)).toBeNull();
+			expect((await findApprovedTutors(filters, null)).total).toBe(0);
+			await TutorProfile.updateOne(
+				{ _id: profile.id },
+				{ $set: { publicListing: true } },
+			);
+			const publicDetail = await getApprovedTutorBySlug(profile.slug, null);
+			expect(publicDetail?.quote).toEqual({
+				currency: "USD",
+				amountMinor: 2500,
+			});
+			for (const field of [
+				"userId",
+				"userEmail",
+				"scheduling",
+				"availabilityRules",
+				"status",
+				"approvedBy",
+			])
+				expect(publicDetail).not.toHaveProperty(field);
+			expect(
+				(await findApprovedTutors(filters, null)).tutors.map((t) => t.id),
+			).toEqual([profile.id]);
+			await TutorProfile.updateOne(
+				{ _id: profile.id },
+				{ $set: { publicListing: false } },
+			);
+			expect(await getApprovedTutorBySlug(profile.slug, null)).toBeNull();
+			const approved = await getApprovedTutorBySlug(profile.slug, studentId);
 			expect(approved?.id).toBe(profile.id);
 			expect(approved).not.toHaveProperty("userEmail");
 
@@ -312,7 +340,7 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				(await saveAvailability([{ ...availability[0], startTime: "09:00" }]))
 					.success,
 			).toBe(true);
-			expect(await getApprovedTutorBySlug(profile.slug)).toBeNull();
+			expect(await getApprovedTutorBySlug(profile.slug, studentId)).toBeNull();
 			expect((await findApprovedTutors(filters, studentId)).total).toBe(0);
 		}, 60_000);
 

@@ -450,20 +450,19 @@ export default function SubjectsPage() {
 						Ready to learn with a private tutor?
 					</h2>
 					<p className="max-w-xl text-base text-muted-foreground">
-						To view individual tutor bios, search available hourly rates, or
-						book a live virtual classroom session, sign up for a student
-						account.
+						Explore reviewed profiles, compare lesson totals and find a time
+						before signing up.
 					</p>
 					<div className="flex flex-col gap-3 sm:flex-row">
 						<Link
-							href="/sign-up"
+							href="/tutors"
 							className={buttonVariants({
 								variant: "default",
 								size: "lg",
 								className: "rounded-full px-8",
 							})}
 						>
-							Register a Student Account
+							Browse tutors
 						</Link>
 						<Link
 							href="/sign-in"
