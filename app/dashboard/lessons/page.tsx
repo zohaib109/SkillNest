@@ -1,3 +1,4 @@
+import { LessonRecap, RecapForm } from "@/components/dashboard/lesson-notes";
 import { LocalTime } from "@/components/tutors/local-time";
 import { listTutorLessons } from "@/lib/bookings";
 import { requireVerifiedRole } from "@/lib/permissions";
@@ -41,6 +42,29 @@ export default async function TutorLessonsPage() {
 										{lesson.status}
 										{lesson.paymentMode === "sandbox" && " · sandbox"}
 									</p>
+									{lesson.goal &&
+										(lesson.status === "confirmed" ||
+											lesson.status === "completed") && (
+											<p className="w-full break-words text-sm">
+												<strong>Student’s goal</strong> · {lesson.goal}
+											</p>
+										)}
+									{(lesson.status === "confirmed" ||
+										lesson.status === "completed") &&
+										(lesson.recap ? (
+											<LessonRecap
+												recap={{
+													practised: lesson.recap.practised,
+													exercise: lesson.recap.exercise,
+													resource: lesson.recap.resource,
+												}}
+												response={lesson.practiceResponse}
+											/>
+										) : (
+											lesson.endsAt <= now && (
+												<RecapForm id={String(lesson._id)} />
+											)
+										))}
 								</li>
 							))}
 						</ul>

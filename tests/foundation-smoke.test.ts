@@ -344,6 +344,93 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			expect((await findApprovedTutors(filters, studentId)).total).toBe(0);
 		}, 60_000);
 
+		it("keeps published learning notes private to the booking and reuses practice only for the same participant pair", async () => {
+			const { Booking } = await import("@/models/Booking");
+			const {
+				publishLessonRecap,
+				recordPracticeResponse,
+				lastPracticeWithTutor,
+			} = await import("@/lib/lesson-notes");
+			const { recapInput } = await import("@/lib/validators/lesson-notes");
+			const student = bookingStudentIds[0],
+				tutor = `${runId}-practice-tutor`;
+			const now = Date.now();
+			const b = await Booking.create({
+				studentId: student,
+				tutorId: tutor,
+				tutorProfileId: new mongoose.Types.ObjectId(),
+				tutorName: "Test",
+				startsAt: new Date(now - 7200000),
+				endsAt: new Date(now - 3600000),
+				blockedUntil: new Date(now - 3600000),
+				duration: 60,
+				tutorTimezone: "UTC",
+				studentTimezone: "UTC",
+				amountMinor: 2500,
+				currency: "USD",
+				status: "confirmed",
+				holdExpiresAt: new Date(now - 7300000),
+				confirmedAt: new Date(now - 7200001),
+			});
+			const id = String(b._id),
+				note = {
+					practised: "Trace a loop",
+					exercise: "Predict the output for an empty list",
+					resource: "",
+				};
+			expect(
+				recapInput.safeParse({ ...note, resource: "javascript:alert(1)" })
+					.success,
+			).toBe(false);
+			expect(await lastPracticeWithTutor(student, tutor)).toBeNull();
+			expect(await recordPracticeResponse(student, id, "independent")).toBe(
+				false,
+			);
+			expect(await publishLessonRecap(bookingTutorIds[1], id, note)).toBe(
+				false,
+			);
+			await Booking.updateOne(
+				{ _id: id },
+				{ $set: { endsAt: new Date(now + 3600000) } },
+			);
+			expect(await publishLessonRecap(tutor, id, note)).toBe(false);
+			await Booking.updateOne(
+				{ _id: id },
+				{ $set: { endsAt: new Date(now - 3600000) } },
+			);
+			expect(
+				await Promise.all([
+					publishLessonRecap(tutor, id, note),
+					publishLessonRecap(tutor, id, note),
+				]),
+			).toEqual([true, true]);
+			expect(
+				await publishLessonRecap(tutor, id, {
+					...note,
+					exercise: "Different practice",
+				}),
+			).toBe(false);
+			expect(
+				await recordPracticeResponse(bookingStudentIds[1], id, "independent"),
+			).toBe(false);
+			expect(await recordPracticeResponse(student, id, "needs_help")).toBe(
+				true,
+			);
+			expect(await recordPracticeResponse(student, id, "independent")).toBe(
+				true,
+			);
+			expect((await Booking.findById(id).lean())?.status).toBe("confirmed");
+			expect(await lastPracticeWithTutor(student, tutor)).toBe(note.exercise);
+			expect(
+				await lastPracticeWithTutor(bookingStudentIds[1], tutor),
+			).toBeNull();
+			await Booking.updateOne({ _id: id }, { $set: { status: "cancelled" } });
+			expect(await recordPracticeResponse(student, id, "needs_help")).toBe(
+				false,
+			);
+			expect(await lastPracticeWithTutor(student, tutor)).toBeNull();
+		});
+
 		it("serializes tutor and student reservations and releases expired and cancelled holds", async () => {
 			const { reserveLesson, cancelLessonHold } = await import(
 				"@/actions/bookings"

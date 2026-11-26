@@ -156,6 +156,7 @@ discovery against real MongoDB.
 - **`StudentBookingLock`**: One sequence document per student. Booking creation writes this document and the tutor profile before checking overlaps and creating the hold in a MongoDB transaction.
 - **`Payment`, `PaymentEvent`, `LedgerEntry`**: One intent per sandbox booking, verified delivery outcomes keyed by event ID, and append-only sandbox commission and pending tutor earning entries. Each document records its sandbox mode.
 - **`RefundRequest`**: One sandbox request per cancelled booking, with a server-computed mock policy snapshot and the admin's review decision, note, and timestamp. Approval adds compensating ledger entries and changes the payment status in the same transaction.
+- **Learning continuity**: Optional bounded text on the booking stores the student goal, tutor-attested recap, optional HTTPS resource and learner-reported practice. Conditional single-document writes enforce role, ownership, eligible status, elapsed end time on publication and one immutable recap. The latest practice lookup is scoped to the authenticated student and same tutor. Legacy bookings need no migration. Learning actions do not settle money.
 - **Planned Models**: `Review`, `Payout`, `Message`.
 
 ### Discovery Boundary

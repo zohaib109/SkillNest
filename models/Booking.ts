@@ -1,5 +1,15 @@
 import mongoose, { type InferSchemaType, Schema } from "mongoose";
 
+const recapSchema = new Schema(
+	{
+		practised: { type: String, required: true, maxlength: 400 },
+		exercise: { type: String, required: true, maxlength: 300 },
+		resource: { type: String, default: "", maxlength: 500 },
+		publishedAt: { type: Date, required: true },
+	},
+	{ _id: false },
+);
+
 const bookingSchema = new Schema(
 	{
 		studentId: { type: String, required: true },
@@ -23,6 +33,9 @@ const bookingSchema = new Schema(
 		confirmedAt: Date,
 		paymentMode: { type: String, enum: ["sandbox"] },
 		cancelledAt: Date,
+		goal: { type: String, maxlength: 300 },
+		recap: recapSchema,
+		practiceResponse: { type: String, enum: ["independent", "needs_help"] },
 	},
 	{ timestamps: true },
 );

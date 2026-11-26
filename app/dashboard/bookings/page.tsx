@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CancelHoldForm } from "@/components/dashboard/cancel-hold-form";
+import { LessonRecap } from "@/components/dashboard/lesson-notes";
 import { SandboxCancellationForm } from "@/components/dashboard/sandbox-cancellation-form";
 import { SandboxCheckoutForm } from "@/components/dashboard/sandbox-checkout-form";
 import { LocalTime } from "@/components/tutors/local-time";
@@ -99,6 +100,23 @@ export default async function StudentBookingsPage() {
 									booking.paymentMode === "sandbox" &&
 									booking.startsAt > now && (
 										<SandboxCancellationForm bookingId={bookingId} />
+									)}
+								{booking.goal && (
+									<p className="w-full break-words text-sm">
+										<strong>Your lesson goal</strong> · {booking.goal}
+									</p>
+								)}
+								{booking.recap &&
+									(status === "confirmed" || status === "completed") && (
+										<LessonRecap
+											recap={{
+												practised: booking.recap.practised,
+												exercise: booking.recap.exercise,
+												resource: booking.recap.resource,
+											}}
+											response={booking.practiceResponse}
+											studentBookingId={bookingId}
+										/>
 									)}
 							</li>
 						);

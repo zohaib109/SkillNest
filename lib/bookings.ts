@@ -79,6 +79,7 @@ export async function getBookableWeek(
 	}
 	return {
 		profileId: String(tutor._id),
+		tutorId: tutor.userId,
 		tutorName: tutor.userName || "SkillNest tutor",
 		tutorTimezone: tutor.timezone,
 		durations,
@@ -221,6 +222,7 @@ export async function createBookingHold(
 					tutorName: tutor.userName || "SkillNest tutor",
 					tutorTimezone: tutor.timezone,
 					studentTimezone: input.studentTimezone,
+					goal: input.goal || undefined,
 					startsAt: slot.start,
 					endsAt: slot.end,
 					blockedUntil: slot.blockedUntil,
@@ -269,5 +271,9 @@ export async function listTutorLessons(tutorId: string) {
 
 export async function listRecentBookings() {
 	await connectDB();
-	return Booking.find().sort({ _id: -1 }).limit(50).lean();
+	return Booking.find()
+		.select("-goal -recap -practiceResponse")
+		.sort({ _id: -1 })
+		.limit(50)
+		.lean();
 }

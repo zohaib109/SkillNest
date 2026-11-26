@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { reserveLesson } from "@/actions/bookings";
 import { useLocalTimezone } from "@/components/tutors/local-time";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ export function LessonHoldForm({
 	currency,
 	slots,
 	canSimulate,
+	lastExercise,
 }: {
 	profileId: string;
 	duration: number;
@@ -22,9 +23,11 @@ export function LessonHoldForm({
 	currency: string;
 	slots: string[];
 	canSimulate: boolean;
+	lastExercise: string | null;
 }) {
 	const [error, action, pending] = useActionState(reserveLesson, "");
 	const router = useRouter();
+	const [goal, setGoal] = useState("");
 	const timeZone = useLocalTimezone();
 	const dayFormat = new Intl.DateTimeFormat("en-US", {
 		timeZone,
@@ -91,6 +94,40 @@ export function LessonHoldForm({
 					? "You can simulate payment from My Bookings."
 					: "Payment is currently unavailable. Holds expire automatically."}
 			</p>
+			<label className="block space-y-1">
+				<span className="text-sm font-medium">
+					What would you like to be able to do? (optional)
+				</span>
+				<textarea
+					rows={2}
+					maxLength={300}
+					name="goal"
+					value={goal}
+					onChange={(e) => setGoal(e.target.value)}
+					placeholder="For example, trace a loop and explain why it stops."
+					className="block w-full rounded-xl border border-input bg-background px-3 py-2"
+				/>
+				<span className="text-xs text-muted-foreground">
+					Your tutor can see this after confirmation. Leave out private
+					credentials and graded submissions.
+				</span>
+			</label>
+			{lastExercise && (
+				<details>
+					<summary className="cursor-pointer text-sm">
+						Last practice with this tutor
+					</summary>
+					<p className="my-2 break-words">{lastExercise}</p>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setGoal(lastExercise)}
+					>
+						Use as my lesson goal
+					</Button>
+				</details>
+			)}
 			{error && (
 				<div className="space-y-2">
 					<p role="alert" className="text-sm text-destructive">

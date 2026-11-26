@@ -15,6 +15,7 @@ export async function reserveLesson(
 		return "A verified student account is required.";
 	const parsed = bookingHoldSchema.safeParse({
 		profileId: form.get("profileId"),
+		goal: form.get("goal") ?? undefined,
 		startsAt: form.get("startsAt"),
 		duration: Number(form.get("duration")),
 		studentTimezone: form.get("studentTimezone"),

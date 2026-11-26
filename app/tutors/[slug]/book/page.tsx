@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { LessonHoldForm } from "@/components/tutors/lesson-hold-form";
 import { buttonVariants } from "@/components/ui/button";
 import { getBookableWeek } from "@/lib/bookings";
+import { lastPracticeWithTutor } from "@/lib/lesson-notes";
 import { requireVerifiedRole } from "@/lib/permissions";
 import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
 
@@ -33,6 +34,9 @@ export default async function BookTutorPage({
 		requestedWeek,
 	);
 	if (!booking) notFound();
+	const lastExercise = booking.slots.length
+		? await lastPracticeWithTutor(session.user.id, booking.tutorId)
+		: null;
 	const href = (duration: number, week: number) =>
 		`/tutors/${slug}/book?duration=${duration}&week=${week}`;
 	const { duration, durations, week, weekCount, quote, slots, profileId } =
@@ -97,6 +101,7 @@ export default async function BookTutorPage({
 							duration={duration}
 							{...quote}
 							slots={slots}
+							lastExercise={lastExercise}
 							canSimulate={sandboxPaymentsEnabled()}
 						/>
 					) : (
