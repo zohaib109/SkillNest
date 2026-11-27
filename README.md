@@ -2,6 +2,18 @@
 
 SkillNest helps adult university students find Pakistan-based tutors for individual academic lessons, starting with introductory Python. Its pilot connects a specific learning goal to a bookable lesson, a transparent price and an independent practice exercise. See the [product specification](docs/pilot-spec.md) and [current verification record](docs/execution.md).
 
+## Engineering case study
+
+A student deciding whether to book needs to know what a lesson will cost, whether the advertised time is still available and what they can practise afterwards. A tutor needs to be able to change their hours while honouring existing reservations. The local application covers that journey through private follow-up and simulated settlement.
+
+| Product decision | How the implementation earns trust |
+| --- | --- |
+| Show a bookable time and duration-specific price before signup | Public listing requires the tutor's consent and staff approval. The catalog checks reservations in a batch. A hold rechecks the schedule and quote inside a transaction that serializes bookings for both participants. Tutor breaks retain their original end time even after the lesson is marked complete. |
+| Account for money that arrives after the slot is gone | A signed sandbox capture can confirm the original hold only while it is eligible. A late capture enters a return queue. Staff can record a simulated return after checking the original event, booking, amount, currency and ledger. A student receipt and a tutor's currency-specific statement expose different parts of the same financial record. |
+| Give the student a way to test what they learned | The student can bring a question, the tutor can leave a recap and a fresh exercise, and the student can record whether they solved it independently. Both participants can later confirm delivery. Practice, attendance, reviews and financial settlement have distinct meanings in the data model. |
+
+The [database acceptance suite](tests/foundation-smoke.test.ts) runs against an isolated replica set and exercises overlapping reservations, duplicate payment events, private case evidence and competing review submissions. The [execution record](docs/execution.md) identifies which journeys were also exercised in Edge. Hosted connectivity, live video and real settlement still require external verification. Learning effectiveness and demand remain pilot questions.
+
 ## Stack
 
 - Next.js 16 App Router and React 19
