@@ -1,9 +1,29 @@
 "use client";
 
 import { useActionState } from "react";
-import { decideSandboxRefund } from "@/actions/refunds";
+import {
+	decideSandboxRefund,
+	returnLateSandboxCapture,
+} from "@/actions/refunds";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+
+export function LateReturnForm({ eventId }: { eventId: string }) {
+	const [error, action, pending] = useActionState(returnLateSandboxCapture, "");
+	return (
+		<form action={action} className="space-y-2">
+			<input type="hidden" name="eventId" value={eventId} />
+			<Button type="submit" size="sm" variant="outline" disabled={pending}>
+				Simulate full return
+			</Button>
+			{error && (
+				<p role="alert" className="text-sm text-destructive">
+					{error}
+				</p>
+			)}
+		</form>
+	);
+}
 
 export function RefundReviewForm({
 	bookingId,

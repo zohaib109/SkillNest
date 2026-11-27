@@ -15,6 +15,7 @@ const paymentSchema = new Schema(
 				"failed",
 				"captured",
 				"refund_required",
+				"late_returned",
 				"refunded",
 				"partially_refunded",
 			],
@@ -44,6 +45,8 @@ const paymentEventSchema = new Schema({
 	amountMinor: { type: Number, required: true },
 	currency: { type: String, required: true },
 	verifiedAt: { type: Date, required: true },
+	returnedAt: Date,
+	returnedBy: String,
 });
 
 const ledgerEntrySchema = new Schema({

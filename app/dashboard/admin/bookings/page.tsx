@@ -1,5 +1,8 @@
 import { reviewMessageReport } from "@/actions/booking-messages";
-import { RefundReviewForm } from "@/components/dashboard/admin/refund-review-form";
+import {
+	LateReturnForm,
+	RefundReviewForm,
+} from "@/components/dashboard/admin/refund-review-form";
 import { CaseDecision } from "@/components/dashboard/room-controls";
 import { LocalTime } from "@/components/tutors/local-time";
 import { pendingMessageReports } from "@/lib/booking-messages";
@@ -169,15 +172,34 @@ export default async function AdminBookingsPage() {
 											{formatLessonPrice(event.amountMinor, event.currency)} ·{" "}
 											<LocalTime value={event.verifiedAt.toISOString()} />
 										</p>
+										{event.outcome === "refund_required" && (
+											<LateReturnForm eventId={event._id} />
+										)}
 									</li>
 								))}
 							</ul>
 						) : (
 							<p className="text-sm text-muted-foreground">
-								No payment exceptions recorded.
+								No payment exceptions awaiting review.
 							</p>
 						)}
 					</section>
+					{reconciliation.returns.length > 0 && (
+						<section className="space-y-2">
+							<h2 className="text-xl">Recent simulated returns</h2>
+							<ul className="space-y-2 text-sm">
+								{reconciliation.returns.map((event) => (
+									<li key={event._id}>
+										{formatLessonPrice(event.amountMinor, event.currency)} ·
+										Booking {String(event.paymentId)} ·{" "}
+										{event.returnedAt && (
+											<LocalTime value={event.returnedAt.toISOString()} />
+										)}
+									</li>
+								))}
+							</ul>
+						</section>
+					)}
 				</>
 			)}
 			<section className="space-y-3">

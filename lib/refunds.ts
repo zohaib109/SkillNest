@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { estimateStudentRefund } from "@/lib/refund-policy";
 import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
@@ -163,17 +164,130 @@ export async function listStudentRefunds(
 
 export async function listSandboxReconciliation() {
 	await connectDB();
-	const [requests, events] = await Promise.all([
+	const [requests, late, mismatches, returns] = await Promise.all([
 		RefundRequest.find({ status: "requested" })
 			.sort({ createdAt: 1 })
 			.limit(50)
 			.lean(),
 		PaymentEvent.find({
-			outcome: { $in: ["refund_required", "amount_mismatch"] },
+			mode: "sandbox",
+			returnedAt: { $exists: false },
+			outcome: "refund_required",
 		})
-			.sort({ verifiedAt: -1 })
+			.sort({ verifiedAt: 1, _id: 1 })
 			.limit(50)
 			.lean(),
+		PaymentEvent.find({ mode: "sandbox", outcome: "amount_mismatch" })
+			.sort({ verifiedAt: -1 })
+			.limit(25)
+			.lean(),
+		PaymentEvent.find({
+			mode: "sandbox",
+			outcome: "refund_required",
+			returnedAt: { $type: "date" },
+		})
+			.sort({ returnedAt: -1 })
+			.limit(10)
+			.lean(),
 	]);
-	return { requests, events };
+	return { requests, events: [...late, ...mismatches], returns };
+}
+
+export async function returnUnbookedSandboxPayment(
+	adminId: string,
+	eventId: string,
+) {
+	if (!sandboxPaymentsEnabled()) return false;
+	const { connection } = await connectDB();
+	return connection.transaction(async (session) => {
+		const event = await PaymentEvent.findOne({
+			_id: eventId,
+			mode: "sandbox",
+			kind: "succeeded",
+			outcome: "refund_required",
+		})
+			.session(session)
+			.lean();
+		if (!event) return false;
+		if (event.returnedAt) return true;
+		const now = new Date();
+		const booking = await Booking.exists({
+			_id: event.paymentId,
+			confirmedAt: null,
+			paymentMode: null,
+			amountMinor: event.amountMinor,
+			currency: event.currency,
+			$or: [
+				{ status: "cancelled" },
+				{ status: "held", holdExpiresAt: { $lte: now } },
+			],
+		}).session(session);
+		if (
+			!booking ||
+			(await LedgerEntry.exists({ paymentId: event.paymentId }).session(
+				session,
+			))
+		)
+			return false;
+		const payment = await Payment.updateOne(
+			{
+				_id: event.paymentId,
+				mode: "sandbox",
+				status: "refund_required",
+				amountMinor: event.amountMinor,
+				currency: event.currency,
+			},
+			{ $set: { status: "late_returned" } },
+			{ session },
+		);
+		if (!payment.modifiedCount) return false;
+		await PaymentEvent.updateOne(
+			{ _id: eventId },
+			{
+				$set: { returnedAt: now, returnedBy: adminId },
+			},
+			{ session },
+		);
+		return true;
+	}, transactionOptions);
+}
+
+export async function listStudentLatePayments(
+	studentId: string,
+	ids: Types.ObjectId[],
+) {
+	if (!ids.length) return [];
+	await connectDB();
+	return Booking.aggregate<{
+		_id: Types.ObjectId;
+		status: "refund_required" | "late_returned";
+		amountMinor: number;
+		currency: string;
+	}>([
+		{ $match: { studentId, _id: { $in: ids }, confirmedAt: null } },
+		{
+			$lookup: {
+				from: Payment.collection.name,
+				localField: "_id",
+				foreignField: "_id",
+				as: "payment",
+				pipeline: [
+					{
+						$match: {
+							mode: "sandbox",
+							status: { $in: ["refund_required", "late_returned"] },
+						},
+					},
+				],
+			},
+		},
+		{ $unwind: "$payment" },
+		{
+			$project: {
+				status: "$payment.status",
+				amountMinor: "$payment.amountMinor",
+				currency: "$payment.currency",
+			},
+		},
+	]);
 }

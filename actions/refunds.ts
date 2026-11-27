@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 import { getSession } from "@/lib/auth-server";
 import {
 	cancelAndRequestSandboxRefund,
+	returnUnbookedSandboxPayment,
 	reviewSandboxRefund,
 } from "@/lib/refunds";
 import { bookingIdSchema } from "@/lib/validators/booking";
@@ -39,6 +40,28 @@ export async function requestSandboxCancellation(
 			return "This lesson is unavailable for cancellation.";
 	} catch {
 		return "Couldn't cancel this sandbox lesson. Try again.";
+	}
+	refreshBookings();
+	return "";
+}
+
+export async function returnLateSandboxCapture(
+	_previous: string,
+	form: FormData,
+) {
+	const session = await getSession();
+	if (!session?.user.emailVerified || session.user.role !== "admin")
+		return "A verified administrator account is required.";
+	const event = z
+		.string()
+		.regex(/^[a-z\d:_-]{1,100}$/)
+		.safeParse(form.get("eventId"));
+	if (!event.success) return "Choose a valid sandbox event.";
+	try {
+		if (!(await returnUnbookedSandboxPayment(session.user.id, event.data)))
+			return "The booking and payment records need further review.";
+	} catch {
+		return "Couldn't record the sandbox return. Try again.";
 	}
 	refreshBookings();
 	return "";

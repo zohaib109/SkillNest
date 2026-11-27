@@ -769,14 +769,18 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				const { runSandboxCheckout } = await import(
 					"@/actions/sandbox-payments"
 				);
-				const { decideSandboxRefund, requestSandboxCancellation } =
-					await import("@/actions/refunds");
+				const {
+					decideSandboxRefund,
+					requestSandboxCancellation,
+					returnLateSandboxCapture,
+				} = await import("@/actions/refunds");
 				const { createBookingHold, listTutorLessons } = await import(
 					"@/lib/bookings"
 				);
 				const {
 					cancelAndRequestSandboxRefund,
 					listSandboxReconciliation,
+					listStudentLatePayments,
 					listStudentRefunds,
 					reviewSandboxRefund,
 				} = await import("@/lib/refunds");
@@ -992,6 +996,19 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 					"A verified administrator account is required.",
 				);
 				requestContext.headers = await signIn(studentEmail);
+				const lateId = new mongoose.Types.ObjectId(late.id);
+				const returnForm = new FormData();
+				const lateEventId = `${late.id}:late`;
+				returnForm.set("eventId", lateEventId);
+				expect(await returnLateSandboxCapture("", returnForm)).toBe(
+					"A verified administrator account is required.",
+				);
+				expect(
+					await listStudentLatePayments(bookingStudentIds[0], [lateId]),
+				).toEqual([]);
+				expect(
+					await listStudentLatePayments(paymentStudentId, [lateId]),
+				).toMatchObject([{ status: "refund_required" }]);
 				expect(await decideSandboxRefund("", new FormData())).toBe(
 					"A verified administrator account is required.",
 				);
@@ -999,6 +1016,40 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 					.collection("user")
 					.updateOne({ email: adminEmail }, { $set: { emailVerified: true } });
 				requestContext.headers = await signIn(adminEmail);
+				const mismatch = new FormData();
+				mismatch.set("eventId", `${first.id}:mismatch`);
+				expect(await returnLateSandboxCapture("", mismatch)).toContain(
+					"further review",
+				);
+				expect(
+					await Promise.all([
+						returnLateSandboxCapture("", returnForm),
+						returnLateSandboxCapture("", returnForm),
+					]),
+				).toEqual(["", ""]);
+				const reviewed = await PaymentEvent.findById(lateEventId).lean();
+				expect(reviewed).toMatchObject({
+					outcome: "refund_required",
+					returnedAt: expect.any(Date),
+					returnedBy: expect.any(String),
+				});
+				expect((await Payment.findById(late.id))?.status).toBe("late_returned");
+				expect(
+					await listStudentLatePayments(paymentStudentId, [lateId]),
+				).toMatchObject([{ status: "late_returned", amountMinor: 2500 }]);
+				const queue = await listSandboxReconciliation();
+				expect(queue.events.some((event) => event._id === reviewed?._id)).toBe(
+					false,
+				);
+				expect(queue.returns.some((event) => event._id === reviewed?._id)).toBe(
+					true,
+				);
+				expect(await Booking.findById(late.id).lean()).toMatchObject({
+					status: "held",
+				});
+				expect(await LedgerEntry.countDocuments({ paymentId: late.id })).toBe(
+					0,
+				);
 				expect(await requestSandboxCancellation("", new FormData())).toBe(
 					"A verified student account is required.",
 				);

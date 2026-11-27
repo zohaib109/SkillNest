@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { formatLessonPrice } from "@/lib/booking-terms";
 import { listStudentBookings } from "@/lib/bookings";
 import { requireVerifiedRole } from "@/lib/permissions";
-import { listStudentRefunds } from "@/lib/refunds";
+import { listStudentLatePayments, listStudentRefunds } from "@/lib/refunds";
 import { sandboxPaymentsEnabled } from "@/lib/sandbox-payments";
 
 export default async function StudentBookingsPage() {
@@ -22,9 +22,20 @@ export default async function StudentBookingsPage() {
 				status === "cancelled" && paymentMode === "sandbox",
 		)
 		.map(({ _id }) => String(_id));
-	const refunds = sandboxBookingIds.length
-		? await listStudentRefunds(session.user.id, sandboxBookingIds)
-		: [];
+	const [refunds, latePayments] = await Promise.all([
+		sandboxBookingIds.length
+			? listStudentRefunds(session.user.id, sandboxBookingIds)
+			: [],
+		listStudentLatePayments(
+			session.user.id,
+			bookings
+				.filter((booking) => !booking.confirmedAt)
+				.map((booking) => booking._id),
+		),
+	]);
+	const lateByBooking = new Map(
+		latePayments.map((payment) => [String(payment._id), payment]),
+	);
 	const refundsByBooking = new Map(
 		refunds.map((refund) => [String(refund._id), refund]),
 	);
@@ -54,6 +65,7 @@ export default async function StudentBookingsPage() {
 								: booking.status;
 						const bookingId = String(booking._id);
 						const refund = refundsByBooking.get(bookingId);
+						const latePayment = lateByBooking.get(bookingId);
 						return (
 							<li
 								key={bookingId}
@@ -94,6 +106,18 @@ export default async function StudentBookingsPage() {
 											<SandboxCheckoutForm bookingId={bookingId} />
 										)}
 									</div>
+								)}
+								{latePayment && (
+									<p className="text-sm">
+										{latePayment.status === "late_returned"
+											? "Late sandbox payment returned in full"
+											: "Late sandbox payment awaiting return review"}{" "}
+										·{" "}
+										{formatLessonPrice(
+											latePayment.amountMinor,
+											latePayment.currency,
+										)}
+									</p>
 								)}
 								{canSimulate &&
 									status === "confirmed" &&
