@@ -24,7 +24,11 @@ export async function approveTutor(profileId: string): Promise<ActionResult> {
 
 	await connectDB();
 	const profile = await TutorProfile.findOneAndUpdate(
-		{ _id: parsed.data.profileId, status: "pending_review" },
+		{
+			_id: parsed.data.profileId,
+			status: "pending_review",
+			"availabilityRules.0": { $exists: true },
+		},
 		{
 			$set: {
 				status: "approved",
@@ -37,7 +41,10 @@ export async function approveTutor(profileId: string): Promise<ActionResult> {
 		{ returnDocument: "after" },
 	);
 	if (!profile) {
-		return { success: false, error: "Tutor profile is not awaiting review" };
+		return {
+			success: false,
+			error: "Approval requires a pending profile with weekly teaching hours.",
+		};
 	}
 
 	revalidatePath("/dashboard/admin/tutors");

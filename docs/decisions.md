@@ -137,7 +137,7 @@ Guests may browse only explicitly public, approved profiles. A verified student 
 - **Security Update (November 25, 2026)**: Use the approved Next.js 16.4.6, Better Auth 1.7.7, Mongoose 9.11.4, and Vitest 4.1.12 releases. The lockfile records the resolved versions and targeted transitive fixes.
 - **Runtime Floor (November 25, 2026)**: Require Node.js 22.13 or newer for pinned pnpm 11.19.0.
 - **Auth Configuration**: Validate server-only environment variables, require a 32-character minimum Better Auth secret, keep `BETTER_AUTH_URL` server-side, and use Better Auth's same-origin browser client default.
-- **Moderation Invariant**: Any tutor-owned edit to moderated profile content, including weekly availability, returns the profile to `draft` and clears approval metadata.
+- Changes to moderated profile content require fresh approval. Tutors may change validated weekly hours independently, including clearing all hours to pause new bookings. This updates the schedule on the tutor document that hold creation locks. Existing reservations retain their terms. Staff can approve an initial application only while it has weekly hours.
 - **Package Management**: pnpm remains the only package manager; the accidentally committed Bun lockfile was removed.
 
 ### 21. Temporary Manual Collection Accounts

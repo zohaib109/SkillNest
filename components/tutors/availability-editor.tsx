@@ -53,12 +53,11 @@ export function AvailabilityEditor({
 		startTransition(async () => {
 			const result = await saveAvailability(rules);
 			if (result.success) {
-				const wasModerated = initial !== null && initial.status !== "draft";
 				setFeedback({
 					type: "success",
-					message: wasModerated
-						? "Availability saved as a draft. Submit your profile for review again when ready."
-						: "Availability saved.",
+					message: rules.length
+						? "Weekly hours saved for new bookings."
+						: "Weekly hours cleared. New bookings are paused.",
 				});
 				router.refresh();
 			} else {

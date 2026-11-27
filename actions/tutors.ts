@@ -174,14 +174,20 @@ export async function saveAvailability(
 		session.user.name ?? "",
 		session.user.email ?? "",
 	);
-	profile.set("availabilityRules", parsed.data.rules);
-	resetTutorModeration(profile);
-	await profile.save();
+	const saved = await TutorProfile.updateOne(
+		{ _id: profile._id, userId: session.user.id },
+		{ $set: { availabilityRules: parsed.data.rules } },
+		{ timestamps: false },
+	);
+	if (!saved.matchedCount)
+		return { success: false, error: "Tutor profile unavailable" };
 	revalidatePath("/dashboard/availability");
 	revalidatePath("/dashboard/profile");
 	revalidatePath("/complete-profile");
 	revalidatePath("/dashboard/admin/tutors");
 	revalidatePath("/tutors");
+	revalidatePath(`/tutors/${profile.slug}`);
+	revalidatePath(`/tutors/${profile.slug}/book`);
 	return { success: true };
 }
 

@@ -234,6 +234,7 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				true,
 			);
 			const studentHeaders = requestContext.headers;
+			expect((await saveAvailability([])).success).toBe(false);
 
 			requestContext.headers = await signIn(tutorEmail);
 			expect((await submitTutorProfileForReview()).success).toBe(false);
@@ -250,7 +251,11 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				lessonDurations: [60],
 			};
 			const availability = [
-				{ dayOfWeek: 1, startTime: "10:00", endTime: "12:00" },
+				{
+					dayOfWeek: (new Date().getUTCDay() + 2) % 7,
+					startTime: "10:00",
+					endTime: "12:00",
+				},
 			];
 			expect((await saveTutorProfile(profileInput)).success).toBe(true);
 			expect((await submitTutorProfileForReview()).success).toBe(false);
@@ -273,6 +278,11 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 
 			requestContext.headers = tutorHeaders;
 			expect((await submitTutorProfileForReview()).success).toBe(true);
+			expect((await saveAvailability([])).success).toBe(true);
+			requestContext.headers = adminHeaders;
+			expect((await approveTutor(profile.id)).success).toBe(false);
+			requestContext.headers = tutorHeaders;
+			expect((await saveAvailability(availability)).success).toBe(true);
 			requestContext.headers = adminHeaders;
 			expect((await approveTutor(profile.id)).success).toBe(true);
 			expect((await approveTutor(profile.id)).success).toBe(false);
@@ -342,6 +352,23 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			expect(
 				(await saveAvailability([{ ...availability[0], startTime: "09:00" }]))
 					.success,
+			).toBe(true);
+			expect(
+				(await getApprovedTutorBySlug(profile.slug, studentId))?.nextStart,
+			).toBeTruthy();
+			expect(await getApprovedTutorBySlug(profile.slug, null)).toBeNull();
+			expect((await saveAvailability([])).success).toBe(true);
+			expect(
+				await getApprovedTutorBySlug(profile.slug, studentId),
+			).toMatchObject({ id: profile.id, nextStart: null });
+			expect((await findApprovedTutors(filters, studentId)).total).toBe(1);
+			expect(
+				(
+					await saveTutorProfile({
+						...profileInput,
+						headline: "Revised mathematics lessons",
+					})
+				).success,
 			).toBe(true);
 			expect(await getApprovedTutorBySlug(profile.slug, studentId)).toBeNull();
 			expect((await findApprovedTutors(filters, studentId)).total).toBe(0);
