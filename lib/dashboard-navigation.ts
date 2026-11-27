@@ -14,6 +14,7 @@ export const DASHBOARD_NAV_ITEMS: Record<Role, DashboardNavItem[]> = {
 		{ href: "/dashboard", label: "Overview" },
 		{ href: "/dashboard/profile", label: "My Profile" },
 		{ href: "/dashboard/availability", label: "Availability" },
+		{ href: "/dashboard/earnings", label: "Earnings" },
 		{ href: "/dashboard/lessons", label: "My Lessons" },
 	],
 	admin: [

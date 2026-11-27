@@ -886,6 +886,32 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 						outcome: "confirmed",
 					}),
 				).toBe(1);
+				const { studentSandboxReceipt, tutorSandboxStatement } = await import(
+					"@/lib/financial-statements"
+				);
+				expect(
+					await studentSandboxReceipt(bookingStudentIds[0], first.id),
+				).toBeNull();
+				expect(
+					await studentSandboxReceipt(paymentStudentId, first.id),
+				).toMatchObject({
+					amountMinor: 2500,
+					currency: "USD",
+					refundedMinor: 0,
+					refundStatus: null,
+				});
+				expect((await tutorSandboxStatement(paymentTutorId)).totals).toEqual([
+					{
+						_id: "USD",
+						captured: 2500,
+						refunded: 0,
+						commission: 375,
+						pending: 2125,
+					},
+				]);
+				expect(
+					(await tutorSandboxStatement(bookingTutorIds[0])).totals,
+				).toEqual([]);
 				const entries = await LedgerEntry.find({ paymentId: first.id })
 					.sort({ amountMinor: 1 })
 					.lean();
@@ -1004,6 +1030,44 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 						0,
 					),
 				).toBe(0);
+				expect(
+					await studentSandboxReceipt(paymentStudentId, first.id),
+				).toMatchObject({ refundedMinor: 2500, refundStatus: "approved" });
+				expect(
+					await studentSandboxReceipt(paymentStudentId, late.id),
+				).toBeNull();
+				expect((await tutorSandboxStatement(paymentTutorId)).totals).toEqual([
+					{
+						_id: "USD",
+						captured: 2500,
+						refunded: -2500,
+						commission: 0,
+						pending: 0,
+					},
+				]);
+				const sampleId = `${runId}-example-pkr`;
+				try {
+					await LedgerEntry.create({
+						_id: sampleId,
+						paymentId: new mongoose.Types.ObjectId(),
+						mode: "sandbox",
+						tutorId: paymentTutorId,
+						kind: "pending_tutor_earning",
+						amountMinor: 1777,
+						currency: "PKR",
+						recordedAt: new Date(),
+					});
+					const separate = await tutorSandboxStatement(paymentTutorId);
+					expect(separate.totals.map((row) => [row._id, row.pending])).toEqual([
+						["PKR", 1777],
+						["USD", 0],
+					]);
+				} finally {
+					await LedgerEntry.deleteOne({
+						_id: sampleId,
+						tutorId: paymentTutorId,
+					});
+				}
 				const repeatedCapture = bodyFor(first.id, "distinct-replay");
 				expect(
 					await recordSandboxPaymentEvent(

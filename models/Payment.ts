@@ -74,6 +74,7 @@ export const PaymentEvent =
 	(mongoose.models.PaymentEvent as mongoose.Model<
 		InferSchemaType<typeof paymentEventSchema>
 	>) ?? mongoose.model("PaymentEvent", paymentEventSchema);
+ledgerEntrySchema.index({ tutorId: 1, mode: 1, recordedAt: -1, _id: -1 });
 export const LedgerEntry =
 	(mongoose.models.LedgerEntry as mongoose.Model<
 		InferSchemaType<typeof ledgerEntrySchema>

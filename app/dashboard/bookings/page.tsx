@@ -136,6 +136,14 @@ export default async function StudentBookingsPage() {
 										Lesson room and support
 									</Link>
 								)}
+								{booking.confirmedAt && booking.paymentMode === "sandbox" && (
+									<Link
+										className="text-sm font-medium text-primary underline"
+										href={`/dashboard/bookings/${bookingId}/receipt`}
+									>
+										Sandbox receipt
+									</Link>
+								)}
 							</li>
 						);
 					})}

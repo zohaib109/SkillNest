@@ -1,6 +1,6 @@
 # SkillNest execution record
 
-Updated November 26, 2026. Development takes place directly on `main`.
+Updated November 27, 2026. Development takes place directly on `main`.
 
 ## Baseline
 
@@ -25,4 +25,5 @@ Updated November 26, 2026. Development takes place directly on `main`.
 - Verification used isolated local data and synthetic credentials. A paid provider, card enrollment, hosted operation or deployment requires separate approval.
 - The learning workflow was committed as `08f088f`. Booking-linked messaging now has bounded text, participant-only access, unread state, older pages, retry-safe sends, closed threads and an admin queue limited to reported excerpts. Five isolated MongoDB workflows passed. Edge verified a student sending a message, a tutor seeing the unread indicator and reporting that message, and an admin recording the decision. Lint, typecheck, 27 unit tests and production build passed. A fresh read-only Atlas ping still failed TLS with `ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR`.
 - Lesson check-in, an on-device camera/microphone preview, private participant statements, and a revision-guarded staff support queue are implemented. Six isolated database workflows passed. Edge confirmed check-in, synthetic device preview and track release, the privacy of a student statement, staff review and the shared outcome. Lint, typecheck, 27 unit tests and production build passed. The check-in is a participant action. Actual two-party media and provider-attested connection events remain open.
-- Next show captured sandbox receipts and refund-adjusted tutor earnings. External RTC credentials, hosted TLS, real settlement and owner commercial approvals remain separate gates.
+- The lesson room and support checkpoint is `5592fa1`. Student bookings now link to a reconciled sandbox receipt. Tutors can open Earnings to inspect payments, refunds, platform fees and pending balances by currency. Edge verified a USD 10.00 lesson with a USD 5.00 refund, a USD 4.25 pending tutor balance, and denial of the receipt to a different signed-in student. Database coverage includes mixed currencies and full reversals. Lint, typecheck, 27 unit tests, six isolated MongoDB workflows and the production build passed.
+- Next resolve verified late sandbox captures after a hold has expired or been released. External RTC credentials, hosted TLS, real settlement and commercial approvals remain launch gates.
