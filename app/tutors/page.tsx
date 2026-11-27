@@ -30,7 +30,7 @@ function pageHref(filters: TutorSearchFilters, page: number) {
 	if (filters.maxRate !== undefined) {
 		params.set("maxRate", String(filters.maxRate));
 	}
-	if (filters.sort !== "recommended") params.set("sort", filters.sort);
+	if (filters.sort !== "newest") params.set("sort", filters.sort);
 	if (filters.savedOnly) params.set("saved", "1");
 	if (page > 1) params.set("page", String(page));
 	const query = params.toString();
@@ -160,8 +160,6 @@ export default async function TutorsPage({
 						/>
 					</label>
 					<FilterSelect name="sort" label="Sort by" value={filters.sort}>
-						<option value="recommended">Recommended</option>
-						<option value="rating">Highest rated</option>
 						<option value="price_asc">Lowest rate</option>
 						<option value="price_desc">Highest rate</option>
 						<option value="newest">Recently approved</option>
@@ -249,14 +247,6 @@ export default async function TutorsPage({
 									<CardFact
 										label="Rate"
 										value={`${tutor.currency} ${tutor.hourlyRate}/hour`}
-									/>
-									<CardFact
-										label="Rating"
-										value={
-											tutor.reviewCount
-												? `${tutor.ratingAverage.toFixed(1)} (${tutor.reviewCount})`
-												: "New tutor"
-										}
 									/>
 									<CardFact label="From" value={tutor.country} />
 									<CardFact

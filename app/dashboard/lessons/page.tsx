@@ -81,7 +81,12 @@ export default async function TutorLessonsPage() {
 											href={`/dashboard/room/${String(lesson._id)}`}
 											className="text-sm font-medium text-primary underline"
 										>
-											Lesson room and support
+											{lesson.endsAt <= now &&
+											lesson.paymentMode === "sandbox" &&
+											(lesson.status === "confirmed" ||
+												lesson.status === "completed")
+												? "Lesson confirmation and support"
+												: "Lesson room and support"}
 										</Link>
 									)}
 								</li>

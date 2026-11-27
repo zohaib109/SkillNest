@@ -55,7 +55,7 @@ describe("tutor discovery search params", () => {
 			duration: undefined,
 			minRate: undefined,
 			savedOnly: true,
-			sort: "recommended",
+			sort: "newest",
 			page: 100,
 		});
 	});

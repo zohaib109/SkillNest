@@ -5,13 +5,7 @@ import {
 	SUBJECTS,
 } from "@/lib/constants";
 
-export const TUTOR_SORTS = [
-	"recommended",
-	"rating",
-	"price_asc",
-	"price_desc",
-	"newest",
-] as const;
+export const TUTOR_SORTS = ["price_asc", "price_desc", "newest"] as const;
 
 export type TutorSort = (typeof TUTOR_SORTS)[number];
 
@@ -87,7 +81,7 @@ export function parseTutorSearchParams(
 		savedOnly: scalar(params.saved) === "1",
 		sort: TUTOR_SORTS.includes(rawSort as TutorSort)
 			? (rawSort as TutorSort)
-			: "recommended",
+			: "newest",
 		page: Math.min(Math.max(rawPage ?? 1, 1), 100),
 	};
 }

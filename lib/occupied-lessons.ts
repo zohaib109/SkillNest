@@ -6,7 +6,7 @@ import { Booking, type BookingDoc } from "@/models/Booking";
 export function activeBookings(now: Date): QueryFilter<BookingDoc> {
 	return {
 		$or: [
-			{ status: "confirmed" },
+			{ status: { $in: ["confirmed", "completed"] } },
 			{ status: "held", holdExpiresAt: { $gt: now } },
 		],
 	};

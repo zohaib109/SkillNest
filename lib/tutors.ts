@@ -64,7 +64,7 @@ function serialize(doc: LeanTutor): TutorProfileDTO {
 
 // Scheduling inputs are needed server-side. Only explicitly mapped fields leave this function.
 const DISCOVERY_FIELDS =
-	"userName userId slug headline bio subjects languages hourlyRate currency introVideoUrl country timezone lessonDurations availabilityRules scheduling ratingAverage reviewCount";
+	"userName userId slug headline bio subjects languages hourlyRate currency introVideoUrl country timezone lessonDurations availabilityRules scheduling";
 
 async function displayProfiles(
 	docs: LeanTutor[],
@@ -120,8 +120,6 @@ async function displayProfiles(
 			hourlyRate: doc.hourlyRate,
 			currency: doc.currency,
 			lessonDurations: durations,
-			ratingAverage: doc.ratingAverage ?? 0,
-			reviewCount: doc.reviewCount ?? 0,
 			duration,
 			quote,
 			nextStart: next?.start.toISOString() ?? null,
@@ -185,16 +183,10 @@ export async function findApprovedTutors(
 
 	const sort: Record<string, 1 | -1> =
 		filters.sort === "price_asc"
-			? { hourlyRate: 1 as const, ratingAverage: -1 as const }
+			? { hourlyRate: 1 }
 			: filters.sort === "price_desc"
-				? { hourlyRate: -1 as const, ratingAverage: -1 as const }
-				: filters.sort === "newest"
-					? { approvedAt: -1 as const }
-					: {
-							ratingAverage: -1 as const,
-							reviewCount: -1 as const,
-							updatedAt: -1 as const,
-						};
+				? { hourlyRate: -1 }
+				: { approvedAt: -1 };
 
 	const total = await TutorProfile.countDocuments(query);
 	const pageCount = Math.max(1, Math.ceil(total / DISCOVERY_PAGE_SIZE));

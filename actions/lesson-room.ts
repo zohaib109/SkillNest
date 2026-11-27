@@ -2,7 +2,13 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { getSession } from "@/lib/auth-server";
-import { checkIn, openLessonIssue, reviewLessonIssue } from "@/lib/lesson-room";
+import {
+	checkIn,
+	confirmSandboxDelivery,
+	openLessonIssue,
+	reviewLessonIssue,
+	saveSandboxReview,
+} from "@/lib/lesson-room";
 import { bookingIdSchema } from "@/lib/validators/booking";
 
 async function actorFor(id: string) {
@@ -26,6 +32,39 @@ export async function roomCheckIn(id: string, _previous: string) {
 		return "Check-in is unavailable for this booking or time.";
 	refresh(id);
 	return "Check-in saved.";
+}
+export async function confirmDelivery(id: string, _previous: string) {
+	const actor = await actorFor(id);
+	if (!actor || !(await confirmSandboxDelivery(id, actor)))
+		return "Delivery confirmation is unavailable for this lesson.";
+	refresh(id);
+	revalidatePath("/dashboard/bookings");
+	revalidatePath("/dashboard/lessons");
+	return "Delivery confirmation saved.";
+}
+
+export async function submitSandboxReview(
+	id: string,
+	_previous: string,
+	form: FormData,
+) {
+	const actor = await actorFor(id);
+	if (actor?.role !== "student")
+		return "A verified student account is required.";
+	const score = z.enum(["1", "2", "3", "4", "5"]).safeParse(form.get("score"));
+	const comment = z
+		.string()
+		.trim()
+		.max(500)
+		.safeParse(form.get("comment") ?? "");
+	if (!score.success || !comment.success)
+		return "Choose a rating and keep your comment within 500 characters.";
+	if (
+		!(await saveSandboxReview(id, actor.id, Number(score.data), comment.data))
+	)
+		return "This lesson is unavailable for review or already has a different review.";
+	refresh(id);
+	return "Your private sandbox review was saved.";
 }
 export async function reportLessonIssue(
 	id: string,

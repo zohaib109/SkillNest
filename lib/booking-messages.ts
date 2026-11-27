@@ -55,7 +55,7 @@ export async function readThread(
 		startsAt: doc.startsAt,
 		tutorName: doc.tutorName,
 		canSend:
-			doc.status === "confirmed" &&
+			(doc.status === "confirmed" || doc.status === "completed") &&
 			doc.endsAt.getTime() + 86_400_000 > Date.now(),
 	};
 }
@@ -76,7 +76,7 @@ export async function sendThreadMessage(
 	const result = await Booking.updateOne(
 		{
 			...scope,
-			status: "confirmed",
+			status: { $in: ["confirmed", "completed"] },
 			endsAt: { $gt: new Date(+now - 86_400_000) },
 			"messages.key": { $ne: key },
 			$and: [

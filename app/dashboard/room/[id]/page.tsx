@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
 	CheckInForm,
+	DeliveryConfirmation,
 	DevicePreview,
 	LessonIssueForm,
+	SandboxReviewForm,
 } from "@/components/dashboard/room-controls";
 import { LocalTime } from "@/components/tutors/local-time";
 import { getSession } from "@/lib/auth-server";
@@ -70,7 +72,42 @@ export default async function LessonRoom({
 					Open lesson messages
 				</Link>
 			</section>
-			<DevicePreview />
+			{room.showCompletion && (
+				<section className="space-y-3 rounded-xl border border-border bg-card p-5">
+					<h2 className="text-xl">Did this lesson take place?</h2>
+					<p className="text-sm">
+						Each participant can confirm after the scheduled end. You can still
+						report a problem below.
+					</p>
+					<p className="text-sm">
+						Student ·{" "}
+						{room.studentConfirmed ? "Confirmed" : "Awaiting confirmation"}
+						<br />
+						Tutor ·{" "}
+						{room.tutorConfirmed ? "Confirmed" : "Awaiting confirmation"}
+					</p>
+					{!(role === "student"
+						? room.studentConfirmed
+						: room.tutorConfirmed) && <DeliveryConfirmation id={id} />}
+					{role === "student" &&
+						room.tutorConfirmed &&
+						room.studentConfirmed &&
+						(room.review ? (
+							<div>
+								<h3 className="font-semibold">Your private sandbox review</h3>
+								<p>{room.review.score} out of 5</p>
+								{room.review.comment && (
+									<p className="wrap-anywhere whitespace-pre-wrap">
+										{room.review.comment}
+									</p>
+								)}
+							</div>
+						) : (
+							<SandboxReviewForm id={id} />
+						))}
+				</section>
+			)}
+			{!room.showCompletion && <DevicePreview />}
 			<section className="space-y-2 rounded-xl border border-border bg-card p-5">
 				<h2 className="text-xl">Lesson support</h2>
 				{room.ownStatement && (

@@ -157,7 +157,11 @@ export default async function StudentBookingsPage() {
 										href={`/dashboard/room/${String(booking._id)}`}
 										className="text-sm font-medium text-primary underline"
 									>
-										Lesson room and support
+										{booking.endsAt <= now &&
+										booking.paymentMode === "sandbox" &&
+										(status === "confirmed" || status === "completed")
+											? "Lesson feedback and support"
+											: "Lesson room and support"}
 									</Link>
 								)}
 								{booking.confirmedAt && booking.paymentMode === "sandbox" && (

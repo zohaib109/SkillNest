@@ -2,11 +2,73 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
+	confirmDelivery,
 	reportLessonIssue,
 	resolveLessonIssue,
 	roomCheckIn,
+	submitSandboxReview,
 } from "@/actions/lesson-room";
 import { Button } from "@/components/ui/button";
+
+export function DeliveryConfirmation({ id }: { id: string }) {
+	const [message, action, pending] = useActionState(
+		confirmDelivery.bind(null, id),
+		"",
+	);
+	return (
+		<form action={action} className="space-y-2">
+			<Button type="submit" disabled={pending}>
+				I took part in this lesson
+			</Button>
+			{message && <p role="status">{message}</p>}
+		</form>
+	);
+}
+
+export function SandboxReviewForm({ id }: { id: string }) {
+	const [message, action, pending] = useActionState(
+		submitSandboxReview.bind(null, id),
+		"",
+	);
+	return (
+		<form action={action} className="grid gap-3">
+			<label>
+				How was the lesson?
+				<select
+					name="score"
+					required
+					defaultValue=""
+					className="ml-2 rounded border border-border bg-card p-2"
+				>
+					<option value="" disabled>
+						Choose a rating
+					</option>
+					{[1, 2, 3, 4, 5].map((score) => (
+						<option key={score} value={score}>
+							{score} out of 5
+						</option>
+					))}
+				</select>
+			</label>
+			<label>
+				What helped or could improve? (optional)
+				<textarea
+					name="comment"
+					maxLength={500}
+					rows={3}
+					className="block w-full rounded border border-border bg-card p-2"
+				/>
+			</label>
+			<p className="text-sm">
+				Only you can see this sandbox review in the app.
+			</p>
+			<Button type="submit" disabled={pending}>
+				Save private review
+			</Button>
+			{message && <p role="status">{message}</p>}
+		</form>
+	);
+}
 
 export function DevicePreview() {
 	const video = useRef<HTMLVideoElement>(null),

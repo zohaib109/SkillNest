@@ -138,14 +138,6 @@ export default async function TutorProfilePage({
 					<p className="text-sm text-muted-foreground">per hour</p>
 					<dl className="mt-6 space-y-4 text-sm">
 						<div>
-							<dt className="text-muted-foreground">Rating</dt>
-							<dd className="font-semibold text-foreground">
-								{tutor.reviewCount
-									? `${tutor.ratingAverage.toFixed(1)} from ${tutor.reviewCount} reviews`
-									: "New tutor"}
-							</dd>
-						</div>
-						<div>
 							<dt className="text-muted-foreground">Languages</dt>
 							<dd className="font-semibold text-foreground">
 								{tutor.languages.join(", ")}

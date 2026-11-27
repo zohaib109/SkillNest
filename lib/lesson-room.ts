@@ -14,7 +14,8 @@ export async function roomFor(id: string, actor: Participant) {
 	await connectDB();
 	const doc = await Booking.findOne(participantScope(id, actor))
 		.select(
-			"status startsAt endsAt tutorName studentCheckedInAt tutorCheckedInAt incidentPending +incidentStatements +incidentDecisions",
+			"status startsAt endsAt paymentMode tutorName studentCheckedInAt tutorCheckedInAt studentDeliveryConfirmedAt tutorDeliveryConfirmedAt incidentPending +incidentStatements +incidentDecisions" +
+				(actor.role === "student" ? " +sandboxReview" : ""),
 		)
 		.lean();
 	if (!doc) return null;
@@ -22,6 +23,13 @@ export async function roomFor(id: string, actor: Participant) {
 		closes = new Date(+doc.endsAt + late),
 		now = new Date();
 	return {
+		showCompletion:
+			doc.paymentMode === "sandbox" &&
+			doc.endsAt <= now &&
+			(doc.status === "confirmed" || doc.status === "completed"),
+		studentConfirmed: !!doc.studentDeliveryConfirmedAt,
+		tutorConfirmed: !!doc.tutorDeliveryConfirmedAt,
+		review: actor.role === "student" ? doc.sandboxReview : undefined,
 		tutorName: doc.tutorName,
 		startsAt: doc.startsAt,
 		opens,
@@ -39,6 +47,80 @@ export async function roomFor(id: string, actor: Participant) {
 		studentCheckIn: doc.studentCheckedInAt,
 		tutorCheckIn: doc.tutorCheckedInAt,
 	};
+}
+
+export async function confirmSandboxDelivery(id: string, actor: Participant) {
+	await connectDB();
+	const field =
+		actor.role === "student"
+			? "studentDeliveryConfirmedAt"
+			: "tutorDeliveryConfirmedAt";
+	const result = await Booking.updateOne(
+		{
+			...participantScope(id, actor),
+			confirmedAt: { $type: "date" },
+			paymentMode: "sandbox",
+			status: { $in: ["confirmed", "completed"] },
+			endsAt: { $lte: new Date() },
+			$expr: { $ne: ["$studentId", "$tutorId"] },
+		},
+		[
+			{ $set: { [field]: { $ifNull: [`$${field}`, "$$NOW"] } } },
+			{
+				$set: {
+					status: {
+						$cond: [
+							{
+								$and: [
+									"$studentDeliveryConfirmedAt",
+									"$tutorDeliveryConfirmedAt",
+								],
+							},
+							"completed",
+							"$status",
+						],
+					},
+				},
+			},
+		],
+		{ updatePipeline: true, timestamps: false },
+	);
+	return result.matchedCount === 1;
+}
+
+export async function saveSandboxReview(
+	id: string,
+	studentId: string,
+	score: number,
+	comment: string,
+) {
+	await connectDB();
+	const eligible = {
+		_id: id,
+		studentId,
+		paymentMode: "sandbox",
+		status: "completed",
+		tutorId: { $ne: studentId },
+		endsAt: { $lte: new Date() },
+		confirmedAt: { $type: "date" },
+		studentDeliveryConfirmedAt: { $type: "date" },
+		tutorDeliveryConfirmedAt: { $type: "date" },
+	} as const;
+	const written = await Booking.updateOne(
+		{ ...eligible, sandboxReview: { $exists: false } },
+		{ $set: { sandboxReview: { score, comment, submittedAt: new Date() } } },
+		{ runValidators: true },
+	);
+	return (
+		!!written.modifiedCount ||
+		Boolean(
+			await Booking.exists({
+				...eligible,
+				"sandboxReview.score": score,
+				"sandboxReview.comment": comment,
+			}),
+		)
+	);
 }
 
 export async function checkIn(id: string, actor: Participant) {

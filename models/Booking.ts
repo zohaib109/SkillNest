@@ -52,6 +52,19 @@ const bookingSchema = new Schema(
 		studentLastSent: Date,
 		studentCheckedInAt: Date,
 		tutorCheckedInAt: Date,
+		studentDeliveryConfirmedAt: Date,
+		tutorDeliveryConfirmedAt: Date,
+		sandboxReview: {
+			type: new Schema(
+				{
+					score: { type: Number, required: true, min: 1, max: 5 },
+					comment: { type: String, default: "", maxlength: 500 },
+					submittedAt: { type: Date, required: true },
+				},
+				{ _id: false },
+			),
+			select: false,
+		},
 		incidentStatements: {
 			type: [incidentStatementSchema],
 			default: undefined,

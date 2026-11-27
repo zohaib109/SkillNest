@@ -319,6 +319,8 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 				"availabilityRules",
 				"status",
 				"approvedBy",
+				"ratingAverage",
+				"reviewCount",
 			])
 				expect(publicDetail).not.toHaveProperty(field);
 			expect(
@@ -373,6 +375,102 @@ describe.runIf(process.env.npm_lifecycle_event === "test:smoke")(
 			expect(await getApprovedTutorBySlug(profile.slug, studentId)).toBeNull();
 			expect((await findApprovedTutors(filters, studentId)).total).toBe(0);
 		}, 60_000);
+
+		it("requires both participants to confirm a finished sandbox lesson before one private student review", async () => {
+			const { Booking } = await import("@/models/Booking");
+			const { roomFor, confirmSandboxDelivery, saveSandboxReview } =
+				await import("@/lib/lesson-room");
+			const { LedgerEntry } = await import("@/models/Payment");
+			const now = Date.now();
+			const student = { role: "student", id: bookingStudentIds[0] } as const;
+			const tutor = { role: "tutor", id: `${runId}-review-tutor` } as const;
+			const outsider = { role: "student", id: bookingStudentIds[1] } as const;
+			const booking = await Booking.create({
+				studentId: student.id,
+				tutorId: tutor.id,
+				tutorProfileId: new mongoose.Types.ObjectId(),
+				tutorName: "Review Tutor",
+				startsAt: new Date(now - 60000),
+				endsAt: new Date(now + 60000),
+				blockedUntil: new Date(now + 60000),
+				duration: 30,
+				tutorTimezone: "UTC",
+				studentTimezone: "UTC",
+				amountMinor: 1200,
+				currency: "USD",
+				status: "confirmed",
+				confirmedAt: new Date(now - 120000),
+				holdExpiresAt: new Date(now - 120000),
+				paymentMode: "sandbox",
+			});
+			const id = String(booking._id);
+			expect(await confirmSandboxDelivery(id, student)).toBe(false);
+			await Booking.updateOne(
+				{ _id: id },
+				{ $set: { endsAt: new Date(now - 1000) } },
+			);
+			expect(await confirmSandboxDelivery(id, outsider)).toBe(false);
+			expect(await confirmSandboxDelivery(id, student)).toBe(true);
+			const first = await Booking.findById(id).lean();
+			expect(first?.status).toBe("confirmed");
+			expect(await saveSandboxReview(id, student.id, 4, "Early")).toBe(false);
+			expect(
+				await Promise.all([
+					confirmSandboxDelivery(id, tutor),
+					confirmSandboxDelivery(id, student),
+				]),
+			).toEqual([true, true]);
+			expect(await Booking.findById(id).lean()).toMatchObject({
+				status: "completed",
+				studentDeliveryConfirmedAt: first?.studentDeliveryConfirmedAt,
+			});
+			const { occupiedLessons } = await import("@/lib/occupied-lessons");
+			expect(
+				await occupiedLessons(
+					[tutor.id],
+					null,
+					new Date(now),
+					new Date(now + 30000),
+					new Date(now),
+				),
+			).toHaveLength(1);
+			const { sendThreadMessage, readThread } = await import(
+				"@/lib/booking-messages"
+			);
+			expect((await readThread(id, student))?.canSend).toBe(true);
+			expect(
+				await sendThreadMessage(
+					id,
+					student,
+					crypto.randomUUID(),
+					"Thanks for the example.",
+				),
+			).toBe(true);
+			expect(await saveSandboxReview(id, outsider.id, 1, "Other")).toBe(false);
+			const responses = await Promise.all([
+				saveSandboxReview(id, student.id, 2, "More practice"),
+				saveSandboxReview(id, student.id, 4, "Useful"),
+			]);
+			expect(responses.filter(Boolean)).toHaveLength(1);
+			const review = (await roomFor(id, student))?.review;
+			if (!review) throw new Error("Student review missing");
+			expect(
+				await saveSandboxReview(
+					id,
+					student.id,
+					review.score,
+					review.comment ?? "",
+				),
+			).toBe(true);
+			expect((await roomFor(id, tutor))?.review).toBeUndefined();
+			expect(await roomFor(id, outsider)).toBeNull();
+			expect(await Booking.findById(id).lean()).not.toHaveProperty(
+				"sandboxReview",
+			);
+			expect(await LedgerEntry.countDocuments({ paymentId: booking._id })).toBe(
+				0,
+			);
+		});
 
 		it("keeps published learning notes private to the booking and reuses practice only for the same participant pair", async () => {
 			const { Booking } = await import("@/models/Booking");

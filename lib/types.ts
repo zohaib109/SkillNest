@@ -79,8 +79,6 @@ export type PublicTutorProfileDTO = Pick<
 	| "introVideoUrl"
 	| "country"
 	| "lessonDurations"
-	| "ratingAverage"
-	| "reviewCount"
 > & {
 	duration: number | null;
 	quote: { amountMinor: number; currency: string } | null;
